@@ -14,6 +14,20 @@ class LinearModel(object):
             pri_cols=None,
 
     ):
+        """Constructor for a linear model that works with pandas df inputs.
+
+        Parameters
+        ----------
+        output_col : str giving the output variable name
+        input_cols : list of strs giving the input variable names
+        bias : bool indicating whether to automatically add intercept or not
+        theta_names : list of strs giving names for the params
+        pri_cols : list of strs giving param names for which priors are given
+
+        bias, theta_names and pri_cols are optional, parameters are named
+        according to the input column names if theta_names is not given.
+        """
+
         self.input_cols = input_cols if not bias else ['bias'] + input_cols
         self.output_col = output_col
         self.bias = bias
@@ -38,17 +52,20 @@ class LinearModel(object):
         return pri_sys
 
     def fit(self, data, obs_cov=1.0, pri_mu=None, pri_cov=1.0):
-        """
+        """Feed data (observation data and possible prior specs) and fit the
+        model.
 
         Parameters
         ----------
-        data
-        obs_cov
-        pri_mu
-        pri_cov
+        data : pd.DataFrame giving both input and output data
+        obs_cov : scalar, vector or array giving the observation (co)variance
+        pri_mu : vector defining the prior mean
+        pri_cov : scalar, vector or array giving the prior (co)variance
 
         Returns
         -------
+        Returns an instance of the LinearModel class with fitted parameters.
+        The model can be used to make predictions and plot validation figs.
 
         """
 
