@@ -37,7 +37,6 @@ class LinearModel(object):
 
         return pri_sys
 
-
     def fit(self, data, obs_cov=1.0, pri_mu=None, pri_cov=1.0):
         """
 
@@ -65,12 +64,15 @@ class LinearModel(object):
         A = np.stack([_data.eval(col).values for col in self.input_cols]).T
         obs = _data.eval(self.output_col).values
 
+        # construct prior system matrix
+        B = self._build_prior_sys()
+
         # fit the linear gaussian models
         self.post_mu, self.post_icov = linfit(
             obs, A,
             obs_cov=obs_cov,
             pri_mu=pri_mu,
-            B=self._build_prior_sys(),
+            B=B,
             pri_cov=pri_cov
         )
 
