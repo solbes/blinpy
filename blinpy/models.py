@@ -33,7 +33,7 @@ class LinearModel(object):
         self.bias = bias
         self.post_mu = None
         self.post_icov = None
-        self.pri_cols = pri_cols
+        self.pri_cols = pri_cols if pri_cols is not None else self.input_cols
 
         if theta_names is not None:
             self.theta_names = theta_names \
@@ -43,11 +43,8 @@ class LinearModel(object):
 
     def _build_prior_sys(self):
 
-        if self.pri_cols is not None:
-            _pri_inds = [self.theta_names.index(col) for col in self.pri_cols]
-            pri_sys = np.eye(len(self.input_cols))[_pri_inds, :]
-        else:
-            pri_sys = None
+        _pri_inds = [self.theta_names.index(col) for col in self.pri_cols]
+        pri_sys = np.eye(len(self.input_cols))[_pri_inds, :]
 
         return pri_sys
 
@@ -82,15 +79,15 @@ class LinearModel(object):
         obs = _data.eval(self.output_col).values
 
         # construct prior system matrix
-        B = self._build_prior_sys()
+        B = self._build_prior_sys() if pri_mu is not None else None
 
         # fit the linear gaussian models
         self.post_mu, self.post_icov = linfit(
             obs, A,
-            obs_cov=obs_cov,
-            pri_mu=pri_mu,
+            obs_cov=np.array(obs_cov),
+            pri_mu=np.array(pri_mu),
             B=B,
-            pri_cov=pri_cov
+            pri_cov=np.array(pri_cov)
         )
 
         return self
