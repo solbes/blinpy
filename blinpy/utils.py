@@ -1,37 +1,80 @@
 import logging
 import numpy as np
+import functools
 
 
+# decorator that takes all non-None func inputs and turns them into np.array
+def numpify(func):
+
+    @functools.wraps(func)
+    def _numpify(*args, **kwargs):
+        return func(
+            *[np.array(arg) for arg in args],
+            **{key: np.array(val) for (key, val) in kwargs.items()
+               if val is not None}
+        )
+
+    return _numpify
+
+
+@numpify
 def scale_with_cov(x, cov):
 
-    # TODO: validate dimensions
-
-    _cov = np.array(cov if cov is not None else 1.0)
-    _x = np.array(x)
+    # TODO: validate dimensions?
     l_inv_x = None
 
-    if _x.ndim == 1:
-        if _cov.ndim < 2:
-            l_inv_x = _x / np.sqrt(_cov)
-        elif _cov.ndim == 2:
+    if x.ndim == 1:
+        if cov.ndim < 2:
+            l_inv_x = x / np.sqrt(cov)
+        elif cov.ndim == 2:
             l_inv_x = np.linalg.solve(
-                np.linalg.cholesky(_cov),
-                _x[:, np.newaxis]
+                np.linalg.cholesky(cov),
+                x[:, np.newaxis]
             )[:, 0]
-    elif _x.ndim == 2:
-        if _cov.ndim == 0:
-            l_inv_x = _x / np.sqrt(_cov)
-        elif _cov.ndim == 1:
-            l_inv_x = _x / np.sqrt(_cov[:, np.newaxis])
-        elif _cov.ndim == 2:
-            l_inv_x = np.linalg.solve(np.linalg.cholesky(_cov), _x)
+    elif x.ndim == 2:
+        if cov.ndim == 0:
+            l_inv_x = x / np.sqrt(cov)
+        elif cov.ndim == 1:
+            l_inv_x = x / np.sqrt(cov[:, np.newaxis])
+        elif cov.ndim == 2:
+            l_inv_x = np.linalg.solve(np.linalg.cholesky(cov), x)
 
     return l_inv_x
 
 
-def linfit(obs, A, obs_cov=None, B=None, pri_mu=None, pri_cov=None):
+def check_dimensions(obs, A, obs_cov, B, pri_mu, pri_cov):
 
-    # TODO: validate dimensions and inputs
+    def _check(y, X, cov):
+
+        msgs = []
+        if X.ndim != 2:
+            msgs.append('pri/obs system dimension is %i, expected 2' % X.ndim)
+        if y.ndim != 1:
+            msgs.append('pri/obs dimension is %i, expected 1' % y.ndim)
+        if len(y) != X.shape[0]:
+            msgs.append('len(y)=%i does not match X.shape[0]=%i' %
+                        (len(y), X.shape[0]))
+
+        return msgs
+
+    msgs = _check(obs, A, obs_cov)
+    if len(msgs) > 0:
+        raise ValueError('Obs model not valid:\n' + '\n'.join(msgs))
+
+    if pri_mu is not None:
+        _B = B if B is not None else np.eye(A.shape[1])
+        pri_msgs = _check(pri_mu, _B, pri_cov)
+        if len(pri_msgs) > 0:
+            raise ValueError('Prior model not valid:\n' + '\n'.join(pri_msgs))
+
+    return
+
+
+@numpify
+def linfit(obs, A, obs_cov=1.0, B=None, pri_mu=None, pri_cov=1.0):
+
+    # validate system dimensions
+    check_dimensions(obs, A, obs_cov, B, pri_mu, pri_cov)
 
     # whiten the system
     y = scale_with_cov(obs, obs_cov)
@@ -49,6 +92,5 @@ def linfit(obs, A, obs_cov=None, B=None, pri_mu=None, pri_cov=None):
 
     post_icov = X.T.dot(X)
     post_mu = np.linalg.solve(post_icov, X.T.dot(y))
-    logging.info('jama')
 
     return post_mu, post_icov
