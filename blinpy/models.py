@@ -84,10 +84,10 @@ class LinearModel(object):
         # fit the linear gaussian models
         self.post_mu, self.post_icov = linfit(
             obs, A,
-            obs_cov=np.array(obs_cov),
-            pri_mu=np.array(pri_mu),
+            obs_cov=obs_cov,
+            pri_mu=pri_mu,
             B=B,
-            pri_cov=np.array(pri_cov)
+            pri_cov=pri_cov
         )
 
         return self
