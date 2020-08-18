@@ -9,5 +9,8 @@ setup(
     author='solant',
     author_email='',
     description='',
-    install_requires=['numpy', 'pandas']
+    install_requires=['numpy', 'pandas'],
+    extras_require={
+        'dev': ['pytest']
+    }
 )
