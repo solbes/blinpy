@@ -91,3 +91,30 @@ class LinearModel(object):
         )
 
         return self
+
+    def predict(self, data):
+        """Predict with a fitted linear model.
+
+        Parameters
+        ----------
+        data : input data as pd.DataFrame
+
+        Returns
+        -------
+        Returns the posterior predictive mean as numpy vector
+
+        """
+
+        # add bias to data if needed
+        _data = data.copy()
+        if self.bias:
+            _data['bias'] = 1.0
+
+        # build system matrix
+        A = np.stack([_data.eval(col).values for col in self.input_cols]).T
+
+        return A.dot(self.post_mu[:, np.newaxis])[:, 0]
+
+    @property
+    def theta(self):
+        return dict(zip(self.theta_names, self.post_mu))
