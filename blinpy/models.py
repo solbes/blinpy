@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from blinpy.utils import linfit
+import logging
 
 
 class LinearModel(object):
@@ -31,17 +32,22 @@ class LinearModel(object):
         self.input_cols = input_cols if not bias else ['bias'] + input_cols
         self.output_col = output_col
         self.bias = bias
-        self.post_mu = None
-        self.post_icov = None
         self.pri_cols = pri_cols if pri_cols is not None else self.input_cols
 
         if theta_names is not None:
             self.theta_names = theta_names \
                 if not bias else ['bias'] + theta_names
+        else:
+            self.theta_names = self.input_cols
+
+        self.post_mu = np.nan * np.zeros(len(self.theta_names))
+        self.post_icov = None
+        self.samples = None
 
         # TODO: check system validity
 
-    def _build_prior_sys(self):
+    @property
+    def _prior_sys(self):
 
         _pri_inds = [self.theta_names.index(col) for col in self.pri_cols]
         pri_sys = np.eye(len(self.input_cols))[_pri_inds, :]
@@ -78,15 +84,12 @@ class LinearModel(object):
         A = np.stack([_data.eval(col).values for col in self.input_cols]).T
         obs = _data.eval(self.output_col).values
 
-        # construct prior system matrix
-        B = self._build_prior_sys() if pri_mu is not None else None
-
         # fit the linear gaussian models
         self.post_mu, self.post_icov = linfit(
             obs, A,
             obs_cov=obs_cov,
             pri_mu=pri_mu,
-            B=B,
+            B=self._prior_sys,
             pri_cov=pri_cov
         )
 
@@ -118,3 +121,43 @@ class LinearModel(object):
     @property
     def theta(self):
         return dict(zip(self.theta_names, self.post_mu))
+
+    def bootstrap(self, data, obs_cov=1.0, pri_mu=None, pri_cov=1.0,
+                  boot_size=None, nsamples=500):
+
+        ny = len(data)
+        boot_size = boot_size if boot_size is not None else ny
+
+        # add intercept if needed
+        _data = data.copy()
+        if self.bias:
+            _data['bias'] = 1.0
+
+        # construct system matrix and obs vector
+        A = np.stack([_data.eval(col).values for col in self.input_cols]).T
+        obs = _data.eval(self.output_col).values
+
+        # fit in a loop
+        samples = np.zeros((len(self.post_mu), nsamples)) * np.nan
+        linalg_errors = 0
+        for i in range(nsamples):
+            try:
+                ii = np.random.randint(ny, size=boot_size)
+                samples[:, i], icov = linfit(
+                    obs[ii], A[ii],
+                    obs_cov=obs_cov,
+                    B=self._prior_sys,
+                    pri_mu=pri_mu,
+                    pri_cov=pri_cov
+                )
+            except np.linalg.LinAlgError:
+                linalg_errors += 1
+
+        # log warning if LinAlgError:s were encountered during sampling
+        if linalg_errors / nsamples > 0.5:
+            logging.warning('LinAlgErrors encountered in %i/%i samples' %
+                            (linalg_errors, nsamples))
+
+        self.samples = samples[:, ~np.isnan(samples[0, :])]
+
+        return self
