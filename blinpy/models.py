@@ -42,7 +42,8 @@ class LinearModel(object):
 
         self.post_mu = np.nan * np.zeros(len(self.theta_names))
         self.post_icov = None
-        self.samples = None
+        self.boot_samples = None
+        self.post_samples = None
 
         # TODO: check system validity
 
@@ -154,10 +155,17 @@ class LinearModel(object):
                 linalg_errors += 1
 
         # log warning if LinAlgError:s were encountered during sampling
-        if linalg_errors / nsamples > 0.5:
-            logging.warning('LinAlgErrors encountered in %i/%i samples' %
-                            (linalg_errors, nsamples))
+        if linalg_errors > 1:
+            logging.debug('LinAlgErrors encountered in %i/%i samples' %
+                          (linalg_errors, nsamples))
 
-        self.samples = samples[:, ~np.isnan(samples[0, :])]
+        self.boot_samples = samples[:, ~np.isnan(samples[0, :])]
 
-        return self
+    def sample(self, nsamples=500):
+
+        samples = np.linalg.solve(
+            np.linalg.cholesky(self.post_icov),
+            np.random.standard_normal((len(self.post_mu), nsamples))
+        )
+
+        self.post_samples = self.post_mu[:, np.newaxis] + samples
