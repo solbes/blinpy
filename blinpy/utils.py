@@ -1,7 +1,8 @@
 import logging
 import numpy as np
 import functools
-
+import jsonpickle
+import json
 
 # decorator that takes all non-None func inputs and turns them into np.array
 def numpify(func):
@@ -94,3 +95,67 @@ def linfit(obs, A, obs_cov=1.0, B=None, pri_mu=None, pri_cov=1.0):
     post_mu = np.linalg.solve(post_icov, X.T.dot(y))
 
     return post_mu, post_icov
+
+
+def to_dict(model):
+    """Serialize the model object into a JSON dict
+
+    Parameters
+    ----------
+    model : model instance (object)
+
+    Returns
+    -------
+    dict that encodes the object
+
+    """
+    return json.loads(jsonpickle.encode(model))
+
+
+def from_dict(json_dict):
+    """Constructing a model object from JSON dict
+
+    Parameters
+    ----------
+    json_dict : JSON dict encoding the model object
+
+    Returns
+    -------
+    model object
+
+    """
+    return jsonpickle.decode(json.dumps(json_dict))
+
+
+def load(file):
+    """Load a model object from a JSON file
+
+    Parameters
+    ----------
+    file : JSON file containing the encoded model object
+
+    Returns
+    -------
+    model object
+
+    """
+    with open(file, "r") as jsonfile:
+        import pdb
+        pdb.set_trace()
+        return from_dict(json.load(jsonfile))
+
+
+def save(model, file='blinpy_model.json'):
+    """Save a model object in JSON format
+
+    Parameters
+    ----------
+    model : model object to be saved
+    file : file name
+
+    Returns
+    -------
+
+    """
+    with open(file, "w+") as jsonfile:
+        json.dump(to_dict(model), jsonfile, indent=4)
