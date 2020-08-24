@@ -21,7 +21,7 @@ of linear-Gaussian models, see the examples below.
 
 ## Examples
 
-### Fitting a line
+### Fitting a line, no priors
 
 Standard linear regression can be easily done with 
 `blinpy.models.LinearModel` class that takes in the input data as a `pandas` 
@@ -51,4 +51,12 @@ print(lm.theta)
 ```
 
 That is, the model is defined in the constructor, and fitted using the `fit` 
-method. The fitted parameters can be accessed via `lm.theta` property.
+method. The fitted parameters can be accessed via `lm.theta` property. The 
+code outputs:
+```python
+{'bias': 4.8839773707086165, 'th1': 0.2700293864048287}
+```
+
+The posterior mean and covariance information are also stored in numpy arrays
+as `lm.post_mu` and `lm.post_icov`. Note that the posterior precision matrix
+(inverse of covariance) is given instead of the covariance matrix.
