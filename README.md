@@ -20,3 +20,35 @@ defined as well that make it easy to define and work with some common types
 of linear-Gaussian models, see the examples below.
 
 ## Examples
+
+### Fitting a line
+
+Standard linear regression can be easily done with 
+`blinpy.models.LinearModel` class that takes in the input data as a `pandas` 
+DataFrame.
+
+Let us fit a model y=&theta;<sub>0</sub> + &theta;<sub>1</sub>x + e using 
+some dummy data:
+
+```python
+import pandas as pd
+import numpy as np
+from blinpy.models import LinearModel
+
+data = pd.DataFrame(
+    {'x': np.array([0.0, 1.0, 1.0, 2.0, 1.8, 3.0, 4.0, 5.2, 6.5, 8.0, 10.0]),
+     'y': np.array([5.0, 5.0, 5.1, 5.3, 5.5, 5.7, 6.0, 6.3, 6.7, 7.1, 7.5])}
+)
+
+lm = LinearModel(
+    output_col='y', 
+    input_cols=['x'],
+    bias = True,
+    theta_names=['th1'],
+).fit(data)
+
+print(lm.theta)
+```
+
+That is, the model is defined in the constructor, and fitted using the `fit` 
+method. The fitted parameters can be accessed via `lm.theta` property.
