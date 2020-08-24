@@ -32,13 +32,14 @@ class LinearModel(object):
         self.input_cols = input_cols if not bias else ['bias'] + input_cols
         self.output_col = output_col
         self.bias = bias
-        self.pri_cols = pri_cols if pri_cols is not None else self.input_cols
 
         if theta_names is not None:
             self.theta_names = theta_names \
                 if not bias else ['bias'] + theta_names
         else:
             self.theta_names = self.input_cols
+
+        self.pri_cols = pri_cols if pri_cols is not None else self.theta_names
 
         self.post_mu = np.nan * np.zeros(len(self.theta_names))
         self.post_icov = None
