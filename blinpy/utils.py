@@ -140,8 +140,6 @@ def load(file):
 
     """
     with open(file, "r") as jsonfile:
-        import pdb
-        pdb.set_trace()
         return from_dict(json.load(jsonfile))
 
 
