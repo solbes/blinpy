@@ -4,6 +4,7 @@ import functools
 import jsonpickle
 import json
 
+
 # decorator that takes all non-None func inputs and turns them into np.array
 def numpify(func):
 
