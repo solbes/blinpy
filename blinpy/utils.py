@@ -7,6 +7,17 @@ import json
 
 # decorator that takes all non-None func inputs and turns them into np.array
 def numpify(func):
+    """Numpify function inputs: take all non-None function inputs and turn
+    them into np.array. Useful as a decorator.
+
+    Parameters
+    ----------
+    func: function to be numpified
+
+    Returns
+    -------
+    numpified function
+    """
 
     @functools.wraps(func)
     def _numpify(*args, **kwargs):
@@ -21,6 +32,19 @@ def numpify(func):
 
 @numpify
 def scale_with_cov(x, cov):
+    """Scale a vector or matrix with a covariance matrix, useful when whitening
+    fitting problems.
+
+    Parameters
+    ----------
+    x: vector or matrix as np.array or list
+    cov: variance as scalar or vector, or covariance matrix as matrix,
+    accepts np.arrays and lists
+
+    Returns
+    -------
+    input vector/matrix divided by the square root of the cov: inv(chol(cov))*x
+    """
 
     # TODO: validate dimensions?
     l_inv_x = None
@@ -45,19 +69,36 @@ def scale_with_cov(x, cov):
 
 
 def check_dimensions(obs, A, obs_cov, B, pri_mu, pri_cov):
+    """Check the dimensions of a given linear system
+    obs = A*th + N(0, obs_cov)
+    B*th ~ N(pri_mu, pri_cov)
+
+    Parameters
+    ----------
+    obs: observation vector
+    A: model matrix
+    obs_cov: observation covariance matrix
+    B: prior transformation matrix
+    pri_mu: prior mean vector
+    pri_cov: prior covariance matrix
+
+    Returns
+    -------
+    Raises ValueError if the system dimensions are not compatible
+    """
 
     def _check(y, X, cov):
 
-        msgs = []
+        _msgs = []
         if X.ndim != 2:
-            msgs.append('pri/obs system dimension is %i, expected 2' % X.ndim)
+            _msgs.append('pri/obs system dimension is %i, expected 2' % X.ndim)
         if y.ndim != 1:
-            msgs.append('pri/obs dimension is %i, expected 1' % y.ndim)
+            _msgs.append('pri/obs dimension is %i, expected 1' % y.ndim)
         if len(y) != X.shape[0]:
-            msgs.append('len(y)=%i does not match X.shape[0]=%i' %
-                        (len(y), X.shape[0]))
+            _msgs.append('len(y)=%i does not match X.shape[0]=%i' %
+                         (len(y), X.shape[0]))
 
-        return msgs
+        return _msgs
 
     msgs = _check(obs, A, obs_cov)
     if len(msgs) > 0:
@@ -74,6 +115,26 @@ def check_dimensions(obs, A, obs_cov, B, pri_mu, pri_cov):
 
 @numpify
 def linfit(obs, A, obs_cov=1.0, B=None, pri_mu=None, pri_cov=1.0):
+    """Fit a linear system of form
+    obs = A*th + N(0, obs_cov)
+    B*th ~ N(pri_mu, pri_cov)
+
+    Parameters
+    ----------
+    obs: np.array or list, observation vector of length N_obs
+    A: np.array or list, model matrix of size N_obs*N_theta
+    obs_cov: np.array or list or scalar, observation (co)variance, scalar or
+    N_obs vector or N_obs*N_obs matrix
+    B: np.array or list, prior transformation matrix of size N_pri*N_theta
+    pri_mu: np.array or list, prior mean vector of size N_pri
+    pri_cov: np.array or list, prior (co)variance, scalar or N_pri vector or
+    N_pri*N_pri matrix
+
+    Returns
+    -------
+    (post_mu, post_icov): posterior mean and precision matrix (inverse of
+    covariance) as np.array
+    """
 
     # validate system dimensions
     check_dimensions(obs, A, obs_cov, B, pri_mu, pri_cov)
