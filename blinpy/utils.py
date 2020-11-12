@@ -159,6 +159,43 @@ def linfit(obs, A, obs_cov=1.0, B=None, pri_mu=None, pri_cov=1.0):
     return post_mu, post_icov
 
 
+@numpify
+def interp_matrix(x, xp):
+    """Build matrix for linear 1d interpolation: f = A(x, xp)*fp
+
+    Parameters
+    ----------
+    x: np.array or list, x-coordinates for evaluating the interpolated values
+    xp: np.array or list, x-coordinates of the data points
+
+    Returns
+    -------
+    A(x, xp): interpolation matrix as np.array of shape (len(x), len(xp))
+    """
+
+    _Xp = np.repeat(xp[np.newaxis, :], len(x), axis=0)
+    i_end = np.sum(_Xp < x[:, np.newaxis], axis=1)
+
+    A = np.zeros((len(x), len(xp)))
+    dxp = (xp[i_end] - xp[i_end - 1])
+    A[np.arange(0, len(x)), i_end - 1] = (xp[i_end] - x) / dxp
+    A[np.arange(0, len(x)), i_end] = (x - xp[i_end - 1]) / dxp
+
+    return A
+
+
+def diffmat(n, order=1):
+
+    assert order < n, 'order can be n-1 at max'
+
+    D1 = (np.diag(np.ones(n)) - np.diag(np.ones(n-1), k=1))
+    D = np.eye(n)
+    for i in range(order):
+        D = D.dot(D1)
+
+    return D[:(n-order)]
+
+
 def to_dict(model):
     """Serialize the model object into a JSON dict
 
