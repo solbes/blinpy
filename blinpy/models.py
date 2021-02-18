@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from blinpy.utils import linfit
+from blinpy.utils import *
 import logging
 
 
@@ -170,3 +170,25 @@ class LinearModel(object):
         )
 
         self.post_samples = self.post_mu[:, np.newaxis] + samples
+
+
+@numpify
+def smooth_interp1(x, xp, yp, obs_cov=1, d1_var=np.array(np.inf),
+                   d2_var=np.array(np.inf)):
+
+    A = interp_matrix(xp, x)
+    n = len(x)
+
+    B1 = diffmat(n, order=1)
+    B2 = diffmat(n, order=2)
+    B = np.vstack((B1, B2))
+
+    pri_var1 = d1_var if d1_var.shape else np.repeat(d1_var, n-1)
+    pri_var2 = d2_var if d2_var.shape else np.repeat(d2_var, n-2)
+    pri_var = np.concatenate((pri_var1, pri_var2))
+
+    return linfit(yp, A,
+                  obs_cov=obs_cov,
+                  B=B,
+                  pri_mu=np.zeros(B.shape[0]),
+                  pri_cov=pri_var)
