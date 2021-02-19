@@ -173,8 +173,8 @@ class LinearModel(object):
 
 
 @numpify
-def smooth_interp1(x, xp, yp, obs_cov=1, d1_var=np.array(np.inf),
-                   d2_var=np.array(np.inf)):
+def smooth_interp1(x, xp, yp, obs_cov=1, d1_var=np.array(1e9),
+                   d2_var=np.array(1e9)):
 
     A = interp_matrix(xp, x)
     n = len(x)
