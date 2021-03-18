@@ -75,10 +75,28 @@ lm = LinearModel(
 
 print(lm.theta)
 
-{'bias': 4.603935457929664, 'th1': 0.34251082265349875}
+{'bias': 4.546825637808106, 'th1': 0.34442570226594676}
 ```
 
 The prior covariance can be given as a scalar, vector or matrix. If it's a scalar, the same variance is applied for all parameters. If it's a vector, like in the example above, the variances for individual parameters are given by the vector elements. A full matrix can be used if the parameters correlate a priori.
+
+### Fit a line with partial priors
+
+Sometimes we don't want to put priors for all the parameters, but just for a subset of them. `LinearModel` supports this via the `pri_cols` argument in the model constructor. For instance, let us now fit the same model as above, but only put the prior `th1 ~ N(0.35, 0.001)` and no prior for the bias term:
+
+```python
+lm = LinearModel(
+    output_col='y', 
+    input_cols=['x'],
+    bias = True,
+    theta_names=['th1'],
+    pri_cols = ['th1']
+).fit(data, pri_mu=[0.35], pri_cov=[0.001])
+
+print(lm.theta)
+
+{'bias': 4.603935457929664, 'th1': 0.34251082265349875}
+```
 
 ### Smoothed interpolation 
 
