@@ -61,11 +61,48 @@ The posterior mean and covariance information are also stored in numpy arrays
 as `lm.post_mu` and `lm.post_icov`. Note that the posterior precision matrix
 (inverse of covariance) is given instead of the covariance matrix.
 
+### Fit a line with priors
+
+Gaussian priors (mean and cov) can be added to the `fit` method of `LinearModel`. Let us take the same example as above, but now add a prior `bias ~ N(4,1)` and `th1 ~ N(0.35, 0.001)`:
+
+```python
+lm = LinearModel(
+    output_col='y', 
+    input_cols=['x'],
+    bias = True,
+    theta_names=['th1'],
+).fit(data, pri_mu=[4.0, 0.35], pri_cov=[1.0, 0.001])
+
+print(lm.theta)
+
+{'bias': 4.546825637808106, 'th1': 0.34442570226594676}
+```
+
+The prior covariance can be given as a scalar, vector or matrix. If it's a scalar, the same variance is applied for all parameters. If it's a vector, like in the example above, the variances for individual parameters are given by the vector elements. A full matrix can be used if the parameters correlate a priori.
+
+### Fit a line with partial priors
+
+Sometimes we don't want to put priors for all the parameters, but just for a subset of them. `LinearModel` supports this via the `pri_cols` argument in the model constructor. For instance, let us now fit the same model as above, but only put the prior `th1 ~ N(0.35, 0.001)` and no prior for the bias term:
+
+```python
+lm = LinearModel(
+    output_col='y', 
+    input_cols=['x'],
+    bias = True,
+    theta_names=['th1'],
+    pri_cols = ['th1']
+).fit(data, pri_mu=[0.35], pri_cov=[0.001])
+
+print(lm.theta)
+
+{'bias': 4.603935457929664, 'th1': 0.34251082265349875}
+```
+
 ### Smoothed interpolation 
 
 In many cases, one needs to approximate a function from noisy measurements. To get the smooth underlying trend behind the data, one often uses techniques like LOESS. An alternative way is to discretize the function onto a grid and treat the function values at the grid points as unknowns. In order to get smooth trends, one can add a prior (penalization term) that favors smoothness. In the helper function `smooth_interp1`, one can specify priors for the first and second order differences between the function values. The choice of using first or second order smoothness priors affects the extrapolation behavior of the function, as demonstrated below.
 
-```
+```python
 # generate data
 xobs = np.random.random(500)
 ysig = 0.05
@@ -74,11 +111,11 @@ yobs = 0.5+0.2*xobs + ysig*np.random.randn(len(xobs))
 # define grid for fitting
 xfit = np.linspace(-0.5,1.5,30)
 
-# fit with first order difference prior
+# fit with second order difference prior
 yfit1, yfit_icov1 = bp.models.smooth_interp1(xfit, xobs, yobs, obs_cov=ysig**2, d2_var=1e-4)
 yfit_cov1 = np.linalg.inv(yfit_icov)
 
-# fit with second order difference prior
+# fit with first order difference prior
 yfit2, yfit_icov2 = bp.models.smooth_interp1(xfit, xobs, yobs, obs_cov=ysig**2, d1_var=1e-4)
 yfit_cov2 = np.linalg.inv(yfit_icov2)
 
