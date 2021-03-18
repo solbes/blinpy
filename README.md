@@ -60,3 +60,43 @@ code outputs:
 The posterior mean and covariance information are also stored in numpy arrays
 as `lm.post_mu` and `lm.post_icov`. Note that the posterior precision matrix
 (inverse of covariance) is given instead of the covariance matrix.
+
+### Smoothed interpolation 
+
+In many cases, one needs to approximate a function from noisy measurements. To get the smooth underlying trend behind the data, one often uses techniques like LOESS. An alternative way is to discretize the function onto a grid and treat the function values at the grid points as unknowns. In order to get smooth trends, one can add a prior (penalization term) that favors smoothness. In the helper function `smooth_interp1`, one can specify priors for the first and second order differences between the function values. The choice of using first or second order smoothness priors affects the extrapolation behavior of the function, as demonstrated below.
+
+```
+# generate data
+xobs = np.random.random(500)
+ysig = 0.05
+yobs = 0.5+0.2*xobs + ysig*np.random.randn(len(xobs))
+
+# define grid for fitting
+xfit = np.linspace(-0.5,1.5,30)
+
+# fit with first order difference prior
+yfit1, yfit_icov1 = bp.models.smooth_interp1(xfit, xobs, yobs, obs_cov=ysig**2, d2_var=1e-4)
+yfit_cov1 = np.linalg.inv(yfit_icov)
+
+# fit with second order difference prior
+yfit2, yfit_icov2 = bp.models.smooth_interp1(xfit, xobs, yobs, obs_cov=ysig**2, d1_var=1e-4)
+yfit_cov2 = np.linalg.inv(yfit_icov2)
+
+# plot results
+plt.figure(figsize=(8,8))
+plt.subplot(211)
+plt.plot(xobs,yobs,'k.', alpha=0.5)
+plt.plot(xfit, yfit1, 'r-')
+plt.plot(xfit, yfit1+2*np.sqrt(np.diag(yfit_cov1)), 'r--', lw=1)
+plt.plot(xfit, yfit1-2*np.sqrt(np.diag(yfit_cov1)), 'r--', lw=1)
+
+plt.subplot(212)
+plt.plot(xobs,yobs,'k.', alpha=0.5)
+plt.plot(xfit, yfit2, 'r-')
+plt.plot(xfit, yfit2+2*np.sqrt(np.diag(yfit_cov2)), 'r--', lw=1)
+plt.plot(xfit, yfit2-2*np.sqrt(np.diag(yfit_cov2)), 'r--', lw=1)
+
+plt.show()
+```
+
+![smooth_interp_demo](https://user-images.githubusercontent.com/6495497/111585506-175b4b00-87c8-11eb-9ea4-7e0d7664f05b.png)
