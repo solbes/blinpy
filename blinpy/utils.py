@@ -1,5 +1,6 @@
 import logging
 import numpy as np
+from scipy.sparse import coo_matrix
 import functools
 import jsonpickle
 import json
@@ -136,6 +137,8 @@ def linfit(obs, A, obs_cov=1.0, B=None, pri_mu=None, pri_cov=1.0):
     covariance) as np.array
     """
 
+    # TODO: make sure this works with sparse matrices too
+
     # validate system dimensions
     check_dimensions(obs, A, obs_cov, B, pri_mu, pri_cov)
 
@@ -160,26 +163,36 @@ def linfit(obs, A, obs_cov=1.0, B=None, pri_mu=None, pri_cov=1.0):
 
 
 @numpify
-def interp_matrix(x, xp):
+def interp_matrix(x, xp, sparse=False):
     """Build matrix for linear 1d interpolation: f = A(x, xp)*fp
 
     Parameters
     ----------
     x: np.array or list, x-coordinates for evaluating the interpolated values
     xp: np.array or list, x-coordinates of the data points
+    sparse: if True, return a sparse representation of the matrix
 
     Returns
     -------
-    A(x, xp): interpolation matrix as np.array of shape (len(x), len(xp))
+    A(x, xp): interpolation matrix as np.array or sparse matrix of shape
+    (len(x), len(xp))
     """
 
     _Xp = np.repeat(xp[np.newaxis, :], len(x), axis=0)
     i_end = np.sum(_Xp < x[:, np.newaxis], axis=1)
-
-    A = np.zeros((len(x), len(xp)))
     dxp = (xp[i_end] - xp[i_end - 1])
-    A[np.arange(0, len(x)), i_end - 1] = (xp[i_end] - x) / dxp
-    A[np.arange(0, len(x)), i_end] = (x - xp[i_end - 1]) / dxp
+    i = np.arange(0, len(x))
+
+    if not sparse:
+        A = np.zeros((len(x), len(xp)))
+        A[i, i_end - 1] = (xp[i_end] - x) / dxp
+        A[i, i_end] = (x - xp[i_end - 1]) / dxp
+    else:
+        ii = np.concatenate((i, i))
+        jj = np.concatenate((i_end - 1, i_end))
+        data = np.concatenate(((xp[i_end] - x) / dxp,
+                               (x - xp[i_end - 1]) / dxp))
+        A = coo_matrix((data, (ii, jj))).tocsr()
 
     return A
 
