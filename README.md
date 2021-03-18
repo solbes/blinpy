@@ -61,11 +61,30 @@ The posterior mean and covariance information are also stored in numpy arrays
 as `lm.post_mu` and `lm.post_icov`. Note that the posterior precision matrix
 (inverse of covariance) is given instead of the covariance matrix.
 
+### Fit a line with priors
+
+Gaussian priors (mean and cov) can be added to the `fit` method of `LinearModel`. Let us take the same example as above, but now add a prior `bias ~ N(4,1)` and `th1 ~ N(0.35, 0.001)`:
+
+```python
+lm = LinearModel(
+    output_col='y', 
+    input_cols=['x'],
+    bias = True,
+    theta_names=['th1'],
+).fit(data, pri_mu=[4.0, 0.35], pri_cov=[1.0, 0.001])
+
+print(lm.theta)
+
+{'bias': 4.603935457929664, 'th1': 0.34251082265349875}
+```
+
+The prior covariance can be given as a scalar, vector or matrix. If it's a scalar, the same variance is applied for all parameters. If it's a vector, like in the example above, the variances for individual parameters are given by the vector elements. A full matrix can be used if the parameters correlate a priori.
+
 ### Smoothed interpolation 
 
 In many cases, one needs to approximate a function from noisy measurements. To get the smooth underlying trend behind the data, one often uses techniques like LOESS. An alternative way is to discretize the function onto a grid and treat the function values at the grid points as unknowns. In order to get smooth trends, one can add a prior (penalization term) that favors smoothness. In the helper function `smooth_interp1`, one can specify priors for the first and second order differences between the function values. The choice of using first or second order smoothness priors affects the extrapolation behavior of the function, as demonstrated below.
 
-```
+```python
 # generate data
 xobs = np.random.random(500)
 ysig = 0.05
