@@ -111,11 +111,11 @@ yobs = 0.5+0.2*xobs + ysig*np.random.randn(len(xobs))
 # define grid for fitting
 xfit = np.linspace(-0.5,1.5,30)
 
-# fit with first order difference prior
+# fit with second order difference prior
 yfit1, yfit_icov1 = bp.models.smooth_interp1(xfit, xobs, yobs, obs_cov=ysig**2, d2_var=1e-4)
 yfit_cov1 = np.linalg.inv(yfit_icov)
 
-# fit with second order difference prior
+# fit with first order difference prior
 yfit2, yfit_icov2 = bp.models.smooth_interp1(xfit, xobs, yobs, obs_cov=ysig**2, d1_var=1e-4)
 yfit_cov2 = np.linalg.inv(yfit_icov2)
 
