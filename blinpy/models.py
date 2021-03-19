@@ -172,7 +172,7 @@ class LinearModel(object):
         self.post_samples = self.post_mu[:, np.newaxis] + samples
 
 
-@numpify
+@numpify()
 def smooth_interp1(x, xp, yp, obs_cov=1, d1_var=np.array(1e9),
                    d2_var=np.array(1e9)):
 

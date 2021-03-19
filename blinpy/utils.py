@@ -1,37 +1,53 @@
 import logging
 import numpy as np
-from scipy.sparse import coo_matrix
+from scipy.sparse import coo_matrix, issparse
+from scipy.sparse.linalg import spsolve
 import functools
 import jsonpickle
 import json
 
 
+# parameterized meta-decorator, idea from
+# https://stackoverflow.com/questions/5929107/decorators-with-parameters
+def parametrized(dec):
+    def layer(*args, **kwargs):
+        def repl(f):
+            return dec(f, *args, **kwargs)
+        return repl
+    return layer
+
+
 # decorator that takes all non-None func inputs and turns them into np.array
-def numpify(func):
+@parametrized
+def numpify(func, types=(list, float, int)):
     """Numpify function inputs: take all non-None function inputs and turn
     them into np.array. Useful as a decorator.
 
     Parameters
     ----------
     func: function to be numpified
+    types: types to numpify
 
     Returns
     -------
     numpified function
     """
 
+    def transform(x):
+        return np.array(x) if type(x) in types else x
+
     @functools.wraps(func)
     def _numpify(*args, **kwargs):
         return func(
-            *[np.array(arg) for arg in args],
-            **{key: np.array(val) for (key, val) in kwargs.items()
+            *[transform(arg) for arg in args],
+            **{key: transform(val) for (key, val) in kwargs.items()
                if val is not None}
         )
 
     return _numpify
 
 
-@numpify
+@numpify()
 def scale_with_cov(x, cov):
     """Scale a vector or matrix with a covariance matrix, useful when whitening
     fitting problems.
@@ -114,7 +130,7 @@ def check_dimensions(obs, A, obs_cov, B, pri_mu, pri_cov):
     return
 
 
-@numpify
+@numpify()
 def linfit(obs, A, obs_cov=1.0, B=None, pri_mu=None, pri_cov=1.0):
     """Fit a linear system of form
     obs = A*th + N(0, obs_cov)
@@ -137,7 +153,7 @@ def linfit(obs, A, obs_cov=1.0, B=None, pri_mu=None, pri_cov=1.0):
     covariance) as np.array
     """
 
-    # TODO: make sure this works with sparse matrices too
+    # TODO: make this work with sparse prior matrices too
 
     # validate system dimensions
     check_dimensions(obs, A, obs_cov, B, pri_mu, pri_cov)
@@ -157,12 +173,16 @@ def linfit(obs, A, obs_cov=1.0, B=None, pri_mu=None, pri_cov=1.0):
         y = np.concatenate((y, l_inv_mu))
 
     post_icov = X.T.dot(X)
-    post_mu = np.linalg.solve(post_icov, X.T.dot(y))
+
+    if issparse(post_icov):
+        post_mu = spsolve(post_icov, X.T.dot(y))
+    else:
+        post_mu = np.linalg.solve(post_icov, X.T.dot(y))
 
     return post_mu, post_icov
 
 
-@numpify
+@numpify()
 def interp_matrix(x, xp, sparse=False):
     """Build matrix for linear 1d interpolation: f = A(x, xp)*fp
 
