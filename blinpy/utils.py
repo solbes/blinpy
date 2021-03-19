@@ -1,6 +1,6 @@
 import logging
 import numpy as np
-from scipy.sparse import coo_matrix, issparse
+from scipy.sparse import coo_matrix, issparse, diags, eye
 from scipy.sparse.linalg import spsolve
 import functools
 import jsonpickle
@@ -217,12 +217,17 @@ def interp_matrix(x, xp, sparse=False):
     return A
 
 
-def diffmat(n, order=1):
+def diffmat(n, order=1, sparse=False):
 
     assert order < n, 'order can be n-1 at max'
 
-    D1 = (np.diag(np.ones(n)) - np.diag(np.ones(n-1), k=1))
-    D = np.eye(n)
+    if sparse:
+        D1 = diags((np.ones(n), np.ones(n-1)), (0, 1))
+        D = eye(n)
+    else:
+        D1 = (np.diag(np.ones(n)) - np.diag(np.ones(n-1), k=1))
+        D = np.eye(n)
+
     for i in range(order):
         D = D.dot(D1)
 
