@@ -1,6 +1,6 @@
 import logging
 import numpy as np
-from scipy.sparse import coo_matrix, issparse, diags, eye
+from scipy.sparse import coo_matrix, issparse, diags, eye, vstack
 from scipy.sparse.linalg import spsolve
 import functools
 import jsonpickle
@@ -139,10 +139,11 @@ def linfit(obs, A, obs_cov=1.0, B=None, pri_mu=None, pri_cov=1.0):
     Parameters
     ----------
     obs: np.array or list, observation vector of length N_obs
-    A: np.array or list, model matrix of size N_obs*N_theta
+    A: np.array or list or sparse matrix, model matrix of size N_obs*N_theta
     obs_cov: np.array or list or scalar, observation (co)variance, scalar or
     N_obs vector or N_obs*N_obs matrix
-    B: np.array or list, prior transformation matrix of size N_pri*N_theta
+    B: np.array or list or sparse matrix, prior transformation matrix of size
+    N_pri*N_theta
     pri_mu: np.array or list, prior mean vector of size N_pri
     pri_cov: np.array or list, prior (co)variance, scalar or N_pri vector or
     N_pri*N_pri matrix
@@ -150,10 +151,8 @@ def linfit(obs, A, obs_cov=1.0, B=None, pri_mu=None, pri_cov=1.0):
     Returns
     -------
     (post_mu, post_icov): posterior mean and precision matrix (inverse of
-    covariance) as np.array
+    covariance) as np.array or sparse matrix
     """
-
-    # TODO: make this work with sparse prior matrices too
 
     # validate system dimensions
     check_dimensions(obs, A, obs_cov, B, pri_mu, pri_cov)
@@ -169,15 +168,13 @@ def linfit(obs, A, obs_cov=1.0, B=None, pri_mu=None, pri_cov=1.0):
         _B = B if B is not None else np.eye(A.shape[1])
         l_inv_B = scale_with_cov(_B, pri_cov)
 
-        X = np.concatenate((X, l_inv_B))
+        X = vstack((X, l_inv_B)) if issparse(X) or issparse(l_inv_B) else \
+            np.concatenate((X, l_inv_B))
         y = np.concatenate((y, l_inv_mu))
 
     post_icov = X.T.dot(X)
-
-    if issparse(post_icov):
-        post_mu = spsolve(post_icov, X.T.dot(y))
-    else:
-        post_mu = np.linalg.solve(post_icov, X.T.dot(y))
+    post_mu = spsolve(post_icov, X.T.dot(y)) if issparse(post_icov) else \
+        np.linalg.solve(post_icov, X.T.dot(y))
 
     return post_mu, post_icov
 
@@ -212,7 +209,7 @@ def interp_matrix(x, xp, sparse=False):
         jj = np.concatenate((i_end - 1, i_end))
         data = np.concatenate(((xp[i_end] - x) / dxp,
                                (x - xp[i_end - 1]) / dxp))
-        A = coo_matrix((data, (ii, jj))).tocsr()
+        A = coo_matrix((data, (ii, jj)), shape=(len(x), len(xp))).tocsr()
 
     return A
 
@@ -222,7 +219,7 @@ def diffmat(n, order=1, sparse=False):
     assert order < n, 'order can be n-1 at max'
 
     if sparse:
-        D1 = diags((np.ones(n), np.ones(n-1)), (0, 1))
+        D1 = diags((np.ones(n), -np.ones(n-1)), (0, 1))
         D = eye(n)
     else:
         D1 = (np.diag(np.ones(n)) - np.diag(np.ones(n-1), k=1))
