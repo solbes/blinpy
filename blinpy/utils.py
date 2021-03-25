@@ -214,6 +214,81 @@ def interp_matrix(x, xp, sparse=False):
     return A
 
 
+def interpn_matrix(xs, xps):
+
+    # helper function to find the grid points where the data is
+    def find_end(xp, x):
+        _Xp = np.repeat(xp[np.newaxis, :], len(x), axis=0)
+        return np.sum(_Xp < x[:, np.newaxis], axis=1)
+
+    # helper function to build template arrays for handling indices
+    def build_template(nd, dim):
+        ii1 = [[0, 1]] * nd
+        ii2 = [[0, 1]] * nd
+
+        ii1[dim] = [0]
+        ii2[dim] = [1]
+
+        start = np.array(
+            [x.flatten() for x in np.meshgrid(*ii1, indexing='ij')]
+        ).T
+        end = np.array(
+            [x.flatten() for x in np.meshgrid(*ii2, indexing='ij')]
+        ).T
+
+        return start, end
+
+    # end points for the hypercubes where the data points are
+    i_ends = [find_end(xp, x) for xp, x in zip(xps, xs.T)]
+
+    # calculate weights (distances from grid points)
+    dxps = [xp[i_end] - xp[i_end - 1] for xp, i_end in zip(xps, i_ends)]
+    ws = [(xp[i_end] - x) / dxp for xp, i_end, x, dxp in
+          zip(xps, i_ends, xs.T, dxps)]
+
+    shape = [len(xp) for xp in xps]
+    ndim = len(shape)
+    nobs = xs.shape[0]
+
+    templates = [build_template(ndim, dim) for dim in range(ndim)]
+
+    indices = np.zeros((nobs, 2 ** ndim))
+    values = np.zeros((nobs, 2 ** ndim))
+
+    inds = np.array(i_ends).T - 1
+    vals = np.zeros(2 ** ndim)
+
+    for i in range(nobs):
+        for dim in range(ndim):
+
+            i1 = np.ravel_multi_index(templates[dim][0].T, ndim * [2])
+            i2 = np.ravel_multi_index(templates[dim][1].T, ndim * [2])
+
+            if dim == 0:
+                vals[i1] = ws[dim][i]
+                vals[i2] = 1 - ws[dim][i]
+
+                starts = inds[i] + templates[dim][0]
+                ends = inds[i] + templates[dim][1]
+
+                inds1 = np.ravel_multi_index(starts.T, shape)
+                inds2 = np.ravel_multi_index(ends.T, shape)
+                indices[i, :] = np.concatenate((inds1, inds2))
+            else:
+                vals[i1] *= ws[dim][i]
+                vals[i2] *= 1 - ws[dim][i]
+
+        values[i, :] = vals
+
+    x = np.repeat(np.arange(nobs), 2 ** ndim)
+    A = coo_matrix(
+        (values.flatten(), (x, indices.flatten())),
+        shape=(nobs, np.prod(shape))
+    ).tocsr()
+
+    return A
+
+
 def diffmat(n, order=1, sparse=False):
 
     assert order < n, 'order can be n-1 at max'
