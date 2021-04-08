@@ -306,6 +306,39 @@ def diffmat(n, order=1, sparse=False):
     return D[:(n-order)]
 
 
+def diffmatn(ns, dim=0, order=1):
+
+    assert order < ns[dim], 'order can be n-1 at max'
+
+    # total number of points
+    n = np.prod(ns)
+
+    # grid indices for all points
+    inds = np.array(np.unravel_index(range(n), ns)).T
+
+    # take only grid points for which the difference calculation is possible
+    inds = inds[inds[:, dim] < ns[dim] - order]
+
+    # take the difference values, e.g. order=2 --> diff_values=[1, -2, 1]
+    diff_values = diffmat(order + 1, order=order).flatten().astype('int')
+
+    # helper function to make a copy of inds where the index is increased
+    def next_ind(indices, k):
+        inds_plus = indices.copy()
+        inds_plus[:, dim] += k
+        return inds_plus
+
+    # collect all the indices in a list
+    inds_next = [inds] + [next_ind(inds, k) for k in range(1, order + 1)]
+
+    # build data for the sparse matrix
+    jjs = np.concatenate([np.ravel_multi_index(ind.T, ns) for ind in inds_next])
+    iis = np.concatenate([range(len(ind)) for ind in inds_next])
+    datas = np.concatenate([val * np.ones(len(inds)) for val in diff_values])
+
+    return coo_matrix((datas, (iis, jjs)), shape=(len(inds), n)).tocsr()
+
+
 def to_dict(model):
     """Serialize the model object into a JSON dict
 
