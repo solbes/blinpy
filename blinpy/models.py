@@ -191,4 +191,4 @@ def smooth_interp1(x, xp, yp, obs_cov=1, d1_var=np.array(1e9),
                   obs_cov=obs_cov,
                   B=B,
                   pri_mu=np.zeros(B.shape[0]),
-                  pri_cov=pri_var)
+                  pri_cov=pri_var)[0:2]

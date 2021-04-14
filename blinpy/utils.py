@@ -130,8 +130,17 @@ def check_dimensions(obs, A, obs_cov, B, pri_mu, pri_cov):
     return
 
 
+def logdet(cov):
+
+    if cov.ndim == 1:
+        return np.sum(np.log(cov))
+    elif cov.ndim == 2:
+        return np.linalg.slogdet(cov)
+
+
 @numpify()
-def linfit(obs, A, obs_cov=1.0, B=None, pri_mu=None, pri_cov=1.0):
+def linfit(obs, A, obs_cov=np.array(1.0), B=None, pri_mu=None,
+           pri_cov=np.array(1.0), likelihood=True):
     """Fit a linear system of form
     obs = A*th + N(0, obs_cov)
     B*th ~ N(pri_mu, pri_cov)
@@ -147,11 +156,12 @@ def linfit(obs, A, obs_cov=1.0, B=None, pri_mu=None, pri_cov=1.0):
     pri_mu: np.array or list, prior mean vector of size N_pri
     pri_cov: np.array or list, prior (co)variance, scalar or N_pri vector or
     N_pri*N_pri matrix
+    likelihood: boolean to indicate whether or not to calculate the likelihood
 
     Returns
     -------
-    (post_mu, post_icov): posterior mean and precision matrix (inverse of
-    covariance) as np.array or sparse matrix
+    (post_mu, post_icov, L): posterior mean and precision matrix (inverse of
+    covariance) as np.array or sparse matrix and optionally -2*log(likelihood)
     """
 
     # validate system dimensions
@@ -162,6 +172,7 @@ def linfit(obs, A, obs_cov=1.0, B=None, pri_mu=None, pri_cov=1.0):
     X = scale_with_cov(A, obs_cov)
 
     # include prior system if given
+    logdet_pri = 0
     if pri_mu is not None:
         l_inv_mu = scale_with_cov(pri_mu, pri_cov)
 
@@ -172,11 +183,24 @@ def linfit(obs, A, obs_cov=1.0, B=None, pri_mu=None, pri_cov=1.0):
             np.concatenate((X, l_inv_B))
         y = np.concatenate((y, l_inv_mu))
 
+        # calculate prior likelihood stuff if needed
+        if likelihood:
+            logdet_pri = logdet(pri_cov*np.ones(_B.shape[0])) if \
+                pri_cov.ndim == 0 else logdet(pri_cov)
+
     post_icov = X.T.dot(X)
     post_mu = spsolve(post_icov, X.T.dot(y)) if issparse(post_icov) else \
         np.linalg.solve(post_icov, X.T.dot(y))
 
-    return post_mu, post_icov
+    # calculate -2*log-likelihood if requested
+    L = np.nan
+    if likelihood:
+        ss = np.sum((y-X.dot(post_mu))**2)
+        logdet_obs = logdet(obs_cov*np.ones(A.shape[0])) if obs_cov.ndim == 0 \
+            else logdet(obs_cov)
+        L = ss + logdet_obs + logdet_pri + X.shape[0]*np.log(2*np.pi)
+
+    return post_mu, post_icov, L
 
 
 @numpify()
