@@ -156,12 +156,12 @@ def linfit(obs, A, obs_cov=np.array(1.0), B=None, pri_mu=None,
     pri_mu: np.array or list, prior mean vector of size N_pri
     pri_cov: np.array or list, prior (co)variance, scalar or N_pri vector or
     N_pri*N_pri matrix
-    likelihood: boolean to indicate whether or not to calculate the likelihood
+    likelihood: boolean to indicate whether or not to calculate the posterior
 
     Returns
     -------
     (post_mu, post_icov, L): posterior mean and precision matrix (inverse of
-    covariance) as np.array or sparse matrix and optionally -2*log(likelihood)
+    covariance) as np.array or sparse matrix and optionally -2*log(posterior)
     """
 
     # validate system dimensions
@@ -193,14 +193,14 @@ def linfit(obs, A, obs_cov=np.array(1.0), B=None, pri_mu=None,
         np.linalg.solve(post_icov, X.T.dot(y))
 
     # calculate -2*log-likelihood if requested
-    L = np.nan
+    log_post = np.nan
     if likelihood:
         ss = np.sum((y-X.dot(post_mu))**2)
         logdet_obs = logdet(obs_cov*np.ones(A.shape[0])) if obs_cov.ndim == 0 \
             else logdet(obs_cov)
-        L = ss + logdet_obs + logdet_pri + X.shape[0]*np.log(2*np.pi)
+        log_post = ss + logdet_obs + logdet_pri + X.shape[0]*np.log(2*np.pi)
 
-    return post_mu, post_icov, L
+    return post_mu, post_icov, log_post
 
 
 @numpify()
