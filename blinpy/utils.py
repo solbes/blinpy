@@ -140,7 +140,7 @@ def logdet(cov):
 
 @numpify()
 def linfit(obs, A, obs_cov=np.array(1.0), B=None, pri_mu=None,
-           pri_cov=np.array(1.0), likelihood=True):
+           pri_cov=np.array(1.0), posterior=True):
     """Fit a linear system of form
     obs = A*th + N(0, obs_cov)
     B*th ~ N(pri_mu, pri_cov)
@@ -156,7 +156,7 @@ def linfit(obs, A, obs_cov=np.array(1.0), B=None, pri_mu=None,
     pri_mu: np.array or list, prior mean vector of size N_pri
     pri_cov: np.array or list, prior (co)variance, scalar or N_pri vector or
     N_pri*N_pri matrix
-    likelihood: boolean to indicate whether or not to calculate the posterior
+    posterior: boolean to indicate whether or not to calculate the posterior
 
     Returns
     -------
@@ -184,7 +184,7 @@ def linfit(obs, A, obs_cov=np.array(1.0), B=None, pri_mu=None,
         y = np.concatenate((y, l_inv_mu))
 
         # calculate prior likelihood stuff if needed
-        if likelihood:
+        if posterior:
             logdet_pri = logdet(pri_cov*np.ones(_B.shape[0])) if \
                 pri_cov.ndim == 0 else logdet(pri_cov)
 
@@ -194,7 +194,7 @@ def linfit(obs, A, obs_cov=np.array(1.0), B=None, pri_mu=None,
 
     # calculate -2*log-likelihood if requested
     log_post = np.nan
-    if likelihood:
+    if posterior:
         ss = np.sum((y-X.dot(post_mu))**2)
         logdet_obs = logdet(obs_cov*np.ones(A.shape[0])) if obs_cov.ndim == 0 \
             else logdet(obs_cov)
