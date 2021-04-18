@@ -20,7 +20,7 @@ y = np.array([5.0, 5.0, 5.1, 5.3, 5.5, 5.7, 6.0, 6.3, 6.7, 7.1, 7.5])
 )
 def test_linfit(obs, A, kwargs, expected_mu):
 
-    mu, icov = utils.linfit(obs, A, **kwargs)
+    mu, icov, _ = utils.linfit(obs, A, **kwargs)
     np.testing.assert_allclose(mu, expected_mu, rtol=1e-5)
 
     pass

@@ -87,7 +87,7 @@ class LinearModel(object):
         obs = _data.eval(self.output_col).values
 
         # fit the linear gaussian models
-        self.post_mu, self.post_icov = linfit(
+        self.post_mu, self.post_icov, _ = linfit(
             obs, A,
             obs_cov=obs_cov,
             pri_mu=pri_mu,
@@ -145,7 +145,7 @@ class LinearModel(object):
         for i in range(nsamples):
             try:
                 ii = np.random.randint(ny, size=boot_size)
-                samples[:, i], icov = linfit(
+                samples[:, i], icov, _ = linfit(
                     obs[ii], A[ii],
                     obs_cov=obs_cov,
                     B=self._prior_sys,
