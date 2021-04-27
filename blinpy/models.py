@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 from blinpy.utils import *
+import scipy.sparse as sparse
+from scipy.linalg import block_diag
 import logging
 
 
@@ -192,3 +194,63 @@ def smooth_interp1(x, xp, yp, obs_cov=1, d1_var=np.array(1e9),
                   B=B,
                   pri_mu=np.zeros(B.shape[0]),
                   pri_cov=pri_var)[0:2]
+
+
+class GamModel(object):
+
+    def __init__(self, output_col, gam_specs):
+
+        self.output_col = output_col
+        self.gam_specs = gam_specs
+
+        self.funcs = [spec['fun'] for spec in gam_specs]
+        self.theta_names = [spec['name'] for spec in gam_specs]
+        self.priors = [spec['prior'] for spec in gam_specs]
+
+        self.post_mu = None
+        self.post_icov = None
+
+    def _build_sys_mat(self, data):
+
+        cols = [func(data) for func in self.funcs]
+        Ks = [col.shape[1] for col in cols]
+        any_sparse = any([issparse(col) for col in cols])
+        A = np.hstack(cols) if not any_sparse else sparse.hstack(cols)
+
+        return A, Ks
+
+    def _build_prior(self):
+
+        priors = [spec['prior'] for spec in self.gam_specs]
+        Bs = [prior['B'] for prior in priors]
+        pri_sparse = any([issparse(B) for B in Bs])
+        B = block_diag(*Bs) if not pri_sparse else sparse.block_diag(*Bs)
+
+        # TODO: assumes vectors, handle scalars and matrices here
+        cov = np.concatenate([prior['cov'] for prior in priors])
+        mu = np.concatenate([prior['mu'] for prior in priors])
+
+        return B, mu, cov
+
+    def fit(self, data, obs_cov=1.0):
+
+        A, Ks = self._build_sys_mat(data)
+        B, pri_mu, pri_cov = self._build_prior()
+
+        obs = data.eval(self.output_col).values
+
+        # fit the linear gaussian model
+        self.post_mu, self.post_icov, _ = linfit(
+            obs, A,
+            obs_cov=obs_cov,
+            pri_mu=pri_mu,
+            B=B,
+            pri_cov=pri_cov
+        )
+
+        return self
+
+    def predict(self, data):
+
+        A, Ks = self._build_sys_mat(data)
+        return A.dot(self.post_mu[:, np.newaxis])[:, 0]
