@@ -190,7 +190,7 @@ def linfit(obs, A, obs_cov=np.array(1.0), B=None, pri_mu=None,
 
     post_icov = X.T.dot(X)
     post_mu = spsolve(post_icov, X.T.dot(y)) if issparse(post_icov) else \
-        np.linalg.solve(post_icov, X.T.dot(y))
+        np.linalg.solve(np.array(post_icov), np.array(X).T.dot(y))
 
     # calculate -2*log-likelihood if requested
     log_post = np.nan
