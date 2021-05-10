@@ -204,7 +204,7 @@ class GamModel(object):
         self.gam_specs = gam_specs
 
         self.funcs = [spec['fun'] for spec in gam_specs]
-        self.theta_names = [spec['name'] for spec in gam_specs]
+        self.theta_names = None
         self.priors = [spec['prior'] for spec in gam_specs]
 
         self.post_mu = None
@@ -248,7 +248,19 @@ class GamModel(object):
             pri_cov=pri_cov
         )
 
+        # insert theta names
+        fun_names = [spec['name'] for spec in self.gam_specs]
+        theta_names = [
+            [name + '_' + str(i) for i in range(K)]
+            for name, K in zip(fun_names, Ks)
+        ]
+        self.theta_names = list(np.concatenate(theta_names))
+
         return self
+
+    @property
+    def theta(self):
+        return dict(zip(self.theta_names, self.post_mu))
 
     def predict(self, data):
 
