@@ -1,6 +1,6 @@
 import logging
 import numpy as np
-from scipy.sparse import coo_matrix, issparse, diags, eye, vstack
+from scipy.sparse import coo_matrix, issparse, diags, eye, vstack, csr_matrix
 from scipy.sparse.linalg import spsolve
 import functools
 import jsonpickle
@@ -313,7 +313,7 @@ def interpn_matrix(xs, xps):
     return A
 
 
-def diffmat(n, order=1, sparse=False):
+def diffmat(n, order=1, sparse=False, symmetric=False):
 
     assert order < n, 'order can be n-1 at max'
 
@@ -327,7 +327,24 @@ def diffmat(n, order=1, sparse=False):
     for i in range(order):
         D = D.dot(D1)
 
-    return D[:(n-order)]
+    D = D[:(n-order)]
+
+    # add symmetry if needed; match values and first derivatives
+    if symmetric:
+        if not sparse:
+            symm_row = np.zeros(n)
+            symm_row[0] = -1
+            symm_row[-1] = 1
+            symm_row2 = np.zeros(n)
+            symm_row2[[0,-2]] = -1
+            symm_row2[[1,-1]] = 1
+            D = np.vstack((D, symm_row, symm_row2))
+        else:
+            symm_row = csr_matrix(([-1, 1], ([0, 0], [0, n-1])))
+            symm_row2 = csr_matrix(([-1, 1, -1, 1], ([0, 0, 0, 0], [0, 1, n-2, n-1])))
+            D = vstack((D, symm_row, symm_row2))
+
+    return D
 
 
 def diffmatn(ns, dim=0, order=1):
