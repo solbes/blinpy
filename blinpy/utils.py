@@ -239,6 +239,17 @@ def interp_matrix(x, xp, sparse=False):
 
 
 def interpn_matrix(xs, xps):
+    """
+    N-dimensional linear interpolation matrix
+    Parameters
+    ----------
+    xs: list of np.arrays, coordinates for evaluating the interpolated values
+    xps: list of np.arrays, coordinates of the data points
+
+    Returns
+    -------
+    A(xs, xps): interpolation matrix as a sparse matrix
+    """
 
     # helper function to find the grid points where the data is
     def find_end(xp, x):
@@ -314,6 +325,19 @@ def interpn_matrix(xs, xps):
 
 
 def diffmat(n, order=1, sparse=False, symmetric=False):
+    """
+    Difference matrix of order N in one dimension
+    Parameters
+    ----------
+    n: int, input grid size
+    order: int, order of the difference
+    sparse: boolean, return a sparse matrix if true
+    symmetric: boolean, add symmetry requirement to prior if true
+
+    Returns
+    -------
+    Difference matrix as np.array or sparse matrix
+    """
 
     assert order < n, 'order can be n-1 at max'
 
