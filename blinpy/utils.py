@@ -131,6 +131,17 @@ def check_dimensions(obs, A, obs_cov, B, pri_mu, pri_cov):
 
 
 def logdet(cov):
+    """
+    Logarithm of the determinant of a covariance matrix
+    Parameters
+    ----------
+    cov: input np.array of dimension 1 or 2. If dimension is 1, cov is taken
+    to be a diagonal matrix, if dimension is 2, the array needs to be square
+
+    Returns
+    -------
+    logarithm of the determinant of the covariance matrix
+    """
 
     if cov.ndim == 1:
         return np.sum(np.log(cov))
@@ -372,6 +383,18 @@ def diffmat(n, order=1, sparse=False, symmetric=False):
 
 
 def diffmatn(ns, dim=0, order=1):
+    """
+    Difference matrix of order N in multiple dimensions
+    Parameters
+    ----------
+    ns: list, input grid sizes for the different dimensions
+    dim: dimension along which the diffs are computed
+    order: order of the difference
+
+    Returns
+    -------
+    Sparse difference matrix
+    """
 
     assert order < ns[dim], 'order can be n-1 at max'
 
