@@ -371,12 +371,14 @@ def diffmat(n, order=1, sparse=False, symmetric=False):
             symm_row[0] = -1
             symm_row[-1] = 1
             symm_row2 = np.zeros(n)
-            symm_row2[[0,-2]] = -1
-            symm_row2[[1,-1]] = 1
+            symm_row2[[1,-2]] = -1
+            symm_row2[[0,-1]] = 1
             D = np.vstack((D, symm_row, symm_row2))
         else:
             symm_row = csr_matrix(([-1, 1], ([0, 0], [0, n-1])))
-            symm_row2 = csr_matrix(([-1, 1, -1, 1], ([0, 0, 0, 0], [0, 1, n-2, n-1])))
+            symm_row2 = csr_matrix(
+                ([1, -1, -1, 1], ([0, 0, 0, 0], [0, 1, n - 2, n - 1]))
+            )
             D = vstack((D, symm_row, symm_row2))
 
     return D
