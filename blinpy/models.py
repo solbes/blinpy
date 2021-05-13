@@ -245,7 +245,8 @@ class GamModel(object):
             obs_cov=obs_cov,
             pri_mu=pri_mu,
             B=B,
-            pri_cov=pri_cov
+            pri_cov=pri_cov,
+            posterior=False
         )
 
         # insert theta names
