@@ -204,11 +204,12 @@ class GamModel(object):
         self.gam_specs = gam_specs
 
         self.funcs = [spec['fun'] for spec in gam_specs]
-        self.theta_names = None
+        self.theta_names = [spec['name'] for spec in gam_specs]
         self.priors = [spec['prior'] for spec in gam_specs]
 
         self.post_mu = None
         self.post_icov = None
+        self.Ks = None
 
     def _build_sys_mat(self, data):
 
@@ -234,7 +235,7 @@ class GamModel(object):
 
     def fit(self, data, obs_cov=1.0):
 
-        A, Ks = self._build_sys_mat(data)
+        A, self.Ks = self._build_sys_mat(data)
         B, pri_mu, pri_cov = self._build_prior()
 
         obs = data.eval(self.output_col).values
@@ -250,18 +251,26 @@ class GamModel(object):
         )
 
         # insert theta names
-        fun_names = [spec['name'] for spec in self.gam_specs]
-        theta_names = [
-            [name + '_' + str(i) for i in range(K)]
-            for name, K in zip(fun_names, Ks)
-        ]
-        self.theta_names = list(np.concatenate(theta_names))
+        #fun_names = [spec['name'] for spec in self.gam_specs]
+        #theta_names = [
+        #    [name + '_' + str(i) for i in range(K)]
+        #    for name, K in zip(fun_names, Ks)
+        #]
+        #self.theta_names = list(np.concatenate(theta_names))
+        #self.Ks = Ks
 
         return self
 
     @property
     def theta(self):
-        return dict(zip(self.theta_names, self.post_mu))
+        theta_dict = {}
+        i=0
+        for name, K in zip(self.theta_names, self.Ks):
+            theta_dict[name] = self.post_mu[i:i+K]
+            i += K
+
+        #return dict(zip(self.theta_names, self.post_mu))
+        return theta_dict
 
     def predict(self, data):
 
