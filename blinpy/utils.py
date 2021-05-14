@@ -206,7 +206,8 @@ def linfit(obs, A, obs_cov=np.array(1.0), B=None, pri_mu=None,
     # calculate -2*log-likelihood if requested
     log_post = np.nan
     if posterior:
-        ss = np.sum((y-X.dot(post_mu))**2)
+        ss = np.sum((y-X.dot(post_mu))**2) if issparse(X) else \
+            np.sum((y-np.array(X).dot(post_mu))**2)
         logdet_obs = logdet(obs_cov*np.ones(A.shape[0])) if obs_cov.ndim == 0 \
             else logdet(obs_cov)
         log_post = ss + logdet_obs + logdet_pri + X.shape[0]*np.log(2*np.pi)
