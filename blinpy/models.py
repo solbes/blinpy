@@ -250,15 +250,6 @@ class GamModel(object):
             posterior=False
         )
 
-        # insert theta names
-        #fun_names = [spec['name'] for spec in self.gam_specs]
-        #theta_names = [
-        #    [name + '_' + str(i) for i in range(K)]
-        #    for name, K in zip(fun_names, Ks)
-        #]
-        #self.theta_names = list(np.concatenate(theta_names))
-        #self.Ks = Ks
-
         return self
 
     @property
