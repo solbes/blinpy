@@ -336,7 +336,7 @@ def interpn_matrix(xs, xps):
     return A
 
 
-def diffmat(n, order=1, sparse=False, symmetric=False):
+def diffmat(n, order=1, sparse=False, periodic=False):
     """
     Difference matrix of order N in one dimension
     Parameters
@@ -366,7 +366,7 @@ def diffmat(n, order=1, sparse=False, symmetric=False):
     D = D[:(n-order)]
 
     # add symmetry if needed; match values and first derivatives
-    if symmetric:
+    if periodic:
         if not sparse:
             symm_row = np.zeros(n)
             symm_row[0] = -1
@@ -428,6 +428,21 @@ def diffmatn(ns, dim=0, order=1):
     datas = np.concatenate([val * np.ones(len(inds)) for val in diff_values])
 
     return coo_matrix((datas, (iis, jjs)), shape=(len(inds), n)).tocsr()
+
+def symmat(n, nsymm=None):
+
+    if nsymm is None:
+        nsymm = int(n/2)
+
+    n_rows = min(n - nsymm, nsymm)
+    S = np.zeros((n_rows, n))
+
+    # function values
+    for i in range(n_rows):
+        S[i, nsymm-i-1] = -1
+        S[i, nsymm+i] = 1
+
+    return S
 
 
 def to_dict(model):
