@@ -253,12 +253,11 @@ class GamModel(object):
     @property
     def theta(self):
         theta_dict = {}
-        i=0
+        i = 0
         for name, K in zip(self.theta_names, self.Ks):
             theta_dict[name] = self.post_mu[i:i+K]
             i += K
 
-        #return dict(zip(self.theta_names, self.post_mu))
         return theta_dict
 
     def predict(self, data):
