@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 from blinpy.utils import *
 import scipy.sparse as sparse

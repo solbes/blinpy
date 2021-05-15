@@ -344,7 +344,7 @@ def diffmat(n, order=1, sparse=False, periodic=False):
     n: int, input grid size
     order: int, order of the difference
     sparse: boolean, return a sparse matrix if true
-    symmetric: boolean, add symmetry requirement to prior if true
+    periodic: boolean, add symmetry requirement to prior if true
 
     Returns
     -------
@@ -428,6 +428,7 @@ def diffmatn(ns, dim=0, order=1):
     datas = np.concatenate([val * np.ones(len(inds)) for val in diff_values])
 
     return coo_matrix((datas, (iis, jjs)), shape=(len(inds), n)).tocsr()
+
 
 def symmat(n, nsymm=None):
 
