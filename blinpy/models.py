@@ -270,21 +270,6 @@ class GamModel(object):
 
         A, _ = self._build_sys_mat(data)
         B, pri_mu, pri_cov = self._build_prior()
+        obs = data.eval(self.output_col).values
 
-        pri_half = scale_with_cov(B, pri_cov)
-        Bt_pri_B = pri_half.T.dot(pri_half)
-
-        y_mu = A.dot(
-            np.linalg.solve(
-                Bt_pri_B,
-                pri_half.T.dot(scale_with_cov(pri_mu, pri_cov))
-            )
-        )
-
-        y_cov = A.dot(
-            np.linalg.solve(Bt_pri_B, A.T)
-        ) + to_cov(obs_cov, dim=len(y_mu))
-
-        obs_diff = (data.eval(self.output_col).values - y_mu)[:, np.newaxis]
-
-        return obs_diff.T.dot(np.linalg.solve(y_cov, obs_diff)) + logdet(y_cov)
+        return evidence(obs, A, obs_cov, B, pri_mu, pri_cov)

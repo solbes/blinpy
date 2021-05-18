@@ -228,6 +228,36 @@ def linfit(obs, A, obs_cov=np.array(1.0), B=None, pri_mu=None,
 
 
 @numpify()
+def evidence(obs, A, obs_cov, B, pri_mu, pri_cov):
+
+    #import pdb
+    #pdb.set_trace()
+
+    pri_half = scale_with_cov(B, pri_cov)
+    Bt_pri_B = pri_half.T.dot(pri_half)
+
+    linsolve = np.linalg.solve if not issparse(Bt_pri_B) else spsolve
+
+    y_mu = A.dot(
+        linsolve(
+            Bt_pri_B,
+            pri_half.T.dot(scale_with_cov(pri_mu, pri_cov))
+        )
+    )
+
+    y_cov = A.dot(linsolve(Bt_pri_B, A.T))
+    if issparse(y_cov):
+        y_cov = y_cov.todense()
+
+    y_cov += to_cov(obs_cov, dim=len(y_mu))
+
+    obs_diff = (obs - y_mu)[:, np.newaxis]
+    evi = obs_diff.T.dot(np.linalg.solve(y_cov, obs_diff)) + logdet(y_cov)
+
+    return evi[0][0]
+
+
+@numpify()
 def interp_matrix(x, xp, sparse=False):
     """Build matrix for linear 1d interpolation: f = A(x, xp)*fp
 
