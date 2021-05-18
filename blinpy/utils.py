@@ -48,6 +48,18 @@ def numpify(func, types=(list, float, int)):
 
 
 @numpify()
+def to_cov(x, dim=None, sparse=False):
+    if x.ndim == 1:
+        if len(x) > 1:
+            cov_x = np.diag(x) if not sparse else diags(x)
+        else:
+            cov_x = x*np.eye(dim) if not sparse else x*eye(dim)
+        return cov_x
+    else:
+        return x
+
+
+@numpify()
 def scale_with_cov(x, cov):
     """Scale a vector or matrix with a covariance matrix, useful when whitening
     fitting problems.
@@ -146,7 +158,7 @@ def logdet(cov):
     if cov.ndim == 1:
         return np.sum(np.log(cov))
     elif cov.ndim == 2:
-        return np.linalg.slogdet(cov)
+        return np.linalg.slogdet(cov)[1]
 
 
 @numpify()

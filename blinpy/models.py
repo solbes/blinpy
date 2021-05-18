@@ -209,6 +209,7 @@ class GamModel(object):
         self.post_mu = None
         self.post_icov = None
         self.Ks = None
+        self.L = None
 
     def _build_sys_mat(self, data):
 
@@ -240,7 +241,7 @@ class GamModel(object):
         obs = data.eval(self.output_col).values
 
         # fit the linear gaussian model
-        self.post_mu, self.post_icov, _ = linfit(
+        self.post_mu, self.post_icov, self.L = linfit(
             obs, A,
             obs_cov=obs_cov,
             pri_mu=pri_mu,
@@ -264,3 +265,26 @@ class GamModel(object):
 
         A, Ks = self._build_sys_mat(data)
         return A.dot(self.post_mu[:, np.newaxis])[:, 0]
+
+    def evidence(self, data, obs_cov=1.0):
+
+        A, _ = self._build_sys_mat(data)
+        B, pri_mu, pri_cov = self._build_prior()
+
+        pri_half = scale_with_cov(B, pri_cov)
+        Bt_pri_B = pri_half.T.dot(pri_half)
+
+        y_mu = A.dot(
+            np.linalg.solve(
+                Bt_pri_B,
+                pri_half.T.dot(scale_with_cov(pri_mu, pri_cov))
+            )
+        )
+
+        y_cov = A.dot(
+            np.linalg.solve(Bt_pri_B, A.T)
+        ) + to_cov(obs_cov, dim=len(y_mu))
+
+        obs_diff = (data.eval(self.output_col).values - y_mu)[:, np.newaxis]
+
+        return obs_diff.T.dot(np.linalg.solve(y_cov, obs_diff)) + logdet(y_cov)
