@@ -272,4 +272,7 @@ class GamModel(object):
         B, pri_mu, pri_cov = self._build_prior()
         obs = data.eval(self.output_col).values
 
-        return evidence(obs, A, obs_cov, B, pri_mu, pri_cov)
+        _A = A.todense() if issparse(A) else A
+        _B = B.todense() if issparse(B) else B
+
+        return evidence(obs, _A, obs_cov, _B, pri_mu, pri_cov)

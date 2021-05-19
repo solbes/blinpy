@@ -50,13 +50,12 @@ def numpify(func, types=(list, float, int)):
 @numpify()
 def to_cov(x, dim=None, sparse=False):
     if x.ndim == 1:
-        if len(x) > 1:
-            cov_x = np.diag(x) if not sparse else diags(x)
-        else:
-            cov_x = x*np.eye(dim) if not sparse else x*eye(dim)
-        return cov_x
+        cov_x = np.diag(x) if not sparse else diags(x)
+    elif x.ndim == 0:
+        cov_x = x*np.eye(dim) if not sparse else x*eye(dim)
     else:
         return x
+    return cov_x
 
 
 @numpify()
@@ -227,29 +226,33 @@ def linfit(obs, A, obs_cov=np.array(1.0), B=None, pri_mu=None,
     return post_mu, post_icov, log_post
 
 
-@numpify()
+@numpify(types=(list, float, int, np.matrix))
 def evidence(obs, A, obs_cov, B, pri_mu, pri_cov):
+    """
+    Calculate the -2*log(evidence) (pdf of data under prior predictive dist)
+    Parameters
+    ----------
+    obs: observation vector as np.array
+    A: system matrix as np.array, NOTE: does not accept sparse matrices
+    obs_cov: observation covariance as scalar, list-like or np.array
+    B: prior system matrix as np.array, NOTE: does not accept sparse matrices
+    pri_mu: prior mean as np.array
+    pri_cov: prior covariance as scalar, list-like or np.array
 
-    #import pdb
-    #pdb.set_trace()
+    Returns
+    -------
+    -2*log(evidence) as scalar
+    """
 
-    pri_half = scale_with_cov(B, pri_cov)
-    Bt_pri_B = pri_half.T.dot(pri_half)
+    gam_pri = to_cov(pri_cov, dim=B.shape[0])
 
-    linsolve = np.linalg.solve if not issparse(Bt_pri_B) else spsolve
+    cov_b = B.T.dot(np.linalg.solve(gam_pri, B))
+    mu_b = np.linalg.solve(cov_b, B.T.dot(
+        np.linalg.solve(gam_pri, pri_mu)
+    ))
 
-    y_mu = A.dot(
-        linsolve(
-            Bt_pri_B,
-            pri_half.T.dot(scale_with_cov(pri_mu, pri_cov))
-        )
-    )
-
-    y_cov = A.dot(linsolve(Bt_pri_B, A.T))
-    if issparse(y_cov):
-        y_cov = y_cov.todense()
-
-    y_cov += to_cov(obs_cov, dim=len(y_mu))
+    y_mu = A.dot(mu_b)
+    y_cov = A.dot(cov_b).dot(A.T) + to_cov(obs_cov, dim=len(y_mu))
 
     obs_diff = (obs - y_mu)[:, np.newaxis]
     evi = obs_diff.T.dot(np.linalg.solve(y_cov, obs_diff)) + logdet(y_cov)
