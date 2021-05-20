@@ -260,6 +260,33 @@ def evidence(obs, A, obs_cov, B, pri_mu, pri_cov):
     return evi[0][0]
 
 
+@numpify(types=(list, float, int, np.matrix))
+def postpred(obs, A, obs_cov, post_mu, post_icov):
+    """
+    Posterior predictive score, -2*log(posterior_predictive)
+    Parameters
+    ----------
+    obs: observation vector as list or np.array
+    A: system matrix as np.array, NOTE: does not accept sparse matrices
+    obs_cov: observation covariance as scalar, list-like or np.array
+    post_mu: posterior mean as np.array
+    post_icov: posterior precision as np.array
+
+    Returns
+    -------
+    -2*log(posterior_predictive)
+    """
+
+    gam_obs = to_cov(obs_cov, dim=A.shape[0])
+    y_mu = A.dot(post_mu)
+    y_cov = A.dot(np.linalg.solve(post_icov, A.T)) + gam_obs
+
+    obs_diff = (obs - y_mu)[:, np.newaxis]
+    pred = obs_diff.T.dot(np.linalg.solve(y_cov, obs_diff)) + logdet(y_cov)
+
+    return pred[0][0]
+
+
 @numpify()
 def interp_matrix(x, xp, sparse=False):
     """Build matrix for linear 1d interpolation: f = A(x, xp)*fp
