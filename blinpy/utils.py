@@ -1,5 +1,6 @@
 import logging
 import numpy as np
+import quadprog
 from scipy.sparse import coo_matrix, issparse, diags, eye, vstack, csr_matrix
 from scipy.sparse.linalg import spsolve
 import functools
@@ -224,6 +225,61 @@ def linfit(obs, A, obs_cov=np.array(1.0), B=None, pri_mu=None,
         log_post = ss + logdet_obs + logdet_pri + X.shape[0]*np.log(2*np.pi)
 
     return post_mu, post_icov, log_post
+
+
+@numpify()
+def linfit_con(obs, A, obs_cov=np.array(1.0), B=None, pri_mu=None,
+               pri_cov=np.array(1.0), C=None, b=None, neq=0):
+    """
+    Fit a constrained linear system of form
+    obs = A*th + N(0, obs_cov)
+    B*th ~ N(pri_mu, pri_cov)
+    C*th >= b
+
+    Parameters
+    ----------
+    obs: np.array or list, observation vector of length N_obs
+    A: np.array or list, model matrix of size N_obs*N_theta
+    obs_cov: np.array or list or scalar, observation (co)variance, scalar or
+    N_obs vector or N_obs*N_obs matrix
+    B: np.array or list, prior transformation matrix of size N_pri*N_theta
+    pri_mu: np.array or list, prior mean vector of size N_pri
+    pri_cov: np.array or list, prior (co)variance, scalar or N_pri vector or
+    N_pri*N_pri matrix
+    posterior: boolean to indicate whether or not to calculate the posterior
+    C: np.array or list, constraint system matrix
+    b: np.array or list, constraint system rhs vector
+    neq: this many first constraints are treated as equality constraints
+
+    Returns
+    -------
+    post_map: posterior MAP estimate
+    """
+
+    # validate system dimensions
+    check_dimensions(obs, A, obs_cov, B, pri_mu, pri_cov)
+
+    # whiten the system
+    y = scale_with_cov(obs, obs_cov)
+    X = scale_with_cov(A, obs_cov)
+
+    # include prior system if given
+    if pri_mu is not None:
+        l_inv_mu = scale_with_cov(pri_mu, pri_cov)
+
+        _B = B if B is not None else np.eye(A.shape[1])
+        l_inv_B = scale_with_cov(_B, pri_cov)
+
+        X = np.concatenate((X, l_inv_B))
+        y = np.concatenate((y, l_inv_mu))
+
+    # build the quadprog system
+    G = X.T.dot(X)
+    a = X.T.dot(y)
+    Ct = C.T if C is not None else None
+    res = quadprog.solve_qp(G, a, C=Ct, b=b, meq=neq)
+
+    return res[0]
 
 
 @numpify(types=(list, float, int, np.matrix))
