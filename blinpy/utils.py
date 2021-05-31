@@ -369,6 +369,7 @@ def interp_matrix(x, xp, sparse=False):
         A[i, i_end - 1] = (xp[i_end] - x) / dxp
         A[i, i_end] = (x - xp[i_end - 1]) / dxp
     else:
+        # TODO: does not work if xp[0] in x (i_end = 0)
         ii = np.concatenate((i, i))
         jj = np.concatenate((i_end - 1, i_end))
         data = np.concatenate(((xp[i_end] - x) / dxp,

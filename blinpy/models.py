@@ -204,11 +204,10 @@ class GamModel(object):
 
         self.funcs = [spec['fun'] for spec in gam_specs]
         self.theta_names = [spec['name'] for spec in gam_specs]
-        self.priors = [spec['prior'] for spec in gam_specs]
 
         self.post_mu = None
         self.post_icov = None
-        self.Ks = None
+        self.Ks = len(self.funcs)*[1]
         self.L = None
 
     def _build_sys_mat(self, data):
@@ -222,7 +221,17 @@ class GamModel(object):
 
     def _build_prior(self):
 
-        priors = [spec['prior'] for spec in self.gam_specs]
+        def empty_pri(K):
+            return {
+                'B': np.zeros((1, K)),
+                'mu': np.zeros(1),
+                'cov': np.ones(1)
+            }
+
+        priors = [
+            spec['prior'] if 'prior' in spec.keys()
+            else empty_pri(K) for spec, K in zip(self.gam_specs, self.Ks)
+        ]
         Bs = [prior['B'] for prior in priors]
         pri_sparse = any([issparse(B) for B in Bs])
         B = block_diag(*Bs) if not pri_sparse else sparse.block_diag(*Bs)
