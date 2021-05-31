@@ -29,6 +29,25 @@ y = np.array([5.0, 5.0, 5.1, 5.3, 5.5, 5.7, 6.0, 6.3, 6.7, 7.1, 7.5])
 def test_linfit(obs, A, kwargs, expected_mu):
 
     mu, icov, _ = utils.linfit(obs, A, **kwargs)
+    mu2 = utils.linfit_con(obs, A, **kwargs)
     np.testing.assert_allclose(mu, expected_mu, rtol=1e-5)
+    np.testing.assert_allclose(mu2, expected_mu, rtol=1e-5)
 
     pass
+
+
+@pytest.mark.parametrize(
+    "x,cov,expected",
+    [
+        (np.ones(2), 0.5, np.ones(2)/np.sqrt(0.5)),
+        (np.ones(2), [0.5, 0.5], np.ones(2)/np.sqrt(0.5)),
+        (np.ones(2), 0.5*np.eye(2), np.ones(2)/np.sqrt(0.5)),
+        (np.eye(2), 0.5, np.eye(2)/np.sqrt(0.5)),
+        (np.eye(2), [0.5, 0.5], np.eye(2)/np.sqrt(0.5)),
+        (np.eye(2), 0.5*np.eye(2), np.eye(2)/np.sqrt(0.5)),
+    ]
+)
+def test_scale_with_cov(x, cov, expected):
+
+    scaled = utils.scale_with_cov(x, cov)
+    np.testing.assert_allclose(scaled, expected, rtol=1e-5)
