@@ -234,7 +234,7 @@ class GamModel(object):
         ]
         Bs = [prior['B'] for prior in priors]
         pri_sparse = any([issparse(B) for B in Bs])
-        B = block_diag(*Bs) if not pri_sparse else sparse.block_diag(*Bs)
+        B = block_diag(*Bs) if not pri_sparse else sparse.block_diag(Bs)
 
         # TODO: assumes vectors, handle scalars and matrices here
         cov = np.concatenate([prior['cov'] for prior in priors])
