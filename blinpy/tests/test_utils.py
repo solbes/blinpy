@@ -51,3 +51,17 @@ def test_scale_with_cov(x, cov, expected):
 
     scaled = utils.scale_with_cov(x, cov)
     np.testing.assert_allclose(scaled, expected, rtol=1e-5)
+
+
+@pytest.mark.parametrize(
+    "x,xp,expected",
+    [
+        ([1.3], [1, 2, 3], np.array([[0.7, 0.3, 0.]]))
+    ]
+)
+def test_interp_matrix(x, xp, expected):
+
+    A = utils.interp_matrix([1.3], [1, 2, 3])
+    A_sparse = utils.interp_matrix([1.3], [1, 2, 3], sparse=True)
+    np.testing.assert_allclose(A, expected)
+    np.testing.assert_allclose(A_sparse.todense(), expected)
