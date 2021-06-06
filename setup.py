@@ -1,4 +1,8 @@
+import os
 from setuptools import setup
+
+with open(os.path.join(os.path.dirname(__file__), "README.md")) as fh:
+    long_description = fh.read()
 
 setup(
     name='blinpy',
@@ -21,5 +25,7 @@ setup(
         'Topic :: Scientific/Engineering :: Artificial Intelligence',
         "License :: OSI Approved :: MIT License",
         'Programming Language :: Python :: 3',
-    ]
+    ],
+    long_description=long_description,
+    long_description_content_type="text/markdown",
 )
