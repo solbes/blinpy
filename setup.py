@@ -2,9 +2,10 @@ from setuptools import setup
 
 setup(
     name='blinpy',
-    version='0.1',
+    version='0.1.1',
     packages=['blinpy'],
     url='https://github.com/solbes/blinpy',
+    download_url = 'https://github.com/solbes/blinpy/archive/refs/tags/0.1.1.tar.gz',
     license='MIT',
     author='Antti Solonen',
     author_email='antti.solonen@gmail.com',
