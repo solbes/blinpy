@@ -19,6 +19,10 @@ the numpy engine to fit the above system. However, some model classes are
 defined as well that make it easy to define and work with some common types 
 of linear-Gaussian models, see the examples below.
 
+## Installation
+
+`pip install blinpy`
+
 ## Examples
 
 ### Fitting a line, no priors
