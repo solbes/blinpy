@@ -2,16 +2,16 @@ from setuptools import setup
 
 setup(
     name='blinpy',
-    version='0.1.2',
+    version='0.1.3',
     packages=['blinpy'],
     url='https://github.com/solbes/blinpy',
-    download_url = 'https://github.com/solbes/blinpy/archive/refs/tags/0.1.2.tar.gz',
+    download_url = 'https://github.com/solbes/blinpy/archive/refs/tags/0.1.3.tar.gz',
     license='MIT',
     author='Antti Solonen',
     author_email='antti.solonen@gmail.com',
     description='Bayesian Linear Models in Python',
     keywords=['bayes', 'linear', 'gam'],
-    install_requires=['numpy', 'pandas', 'jsonpickle'],
+    install_requires=['numpy', 'pandas', 'jsonpickle', 'scipy', 'quadprog'],
     extras_require={
         'dev': ['pytest']
     },
