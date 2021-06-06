@@ -2,10 +2,10 @@ from setuptools import setup
 
 setup(
     name='blinpy',
-    version='0.1.3',
+    version='0.1.4',
     packages=['blinpy'],
     url='https://github.com/solbes/blinpy',
-    download_url = 'https://github.com/solbes/blinpy/archive/refs/tags/0.1.3.tar.gz',
+    download_url = 'https://github.com/solbes/blinpy/archive/refs/tags/0.1.4.tar.gz',
     license='MIT',
     author='Antti Solonen',
     author_email='antti.solonen@gmail.com',
@@ -17,8 +17,8 @@ setup(
     },
     classifiers=[
         'Development Status :: 3 - Alpha',
-        'Intended Audience :: Data Scientists',
-        'Topic :: Data Science :: Linear Models',
+        'Intended Audience :: Science/Research',
+        'Topic :: Scientific/Engineering :: Artificial Intelligence',
         "License :: OSI Approved :: MIT License",
         'Programming Language :: Python :: 3',
     ]
