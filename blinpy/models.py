@@ -285,3 +285,10 @@ class GamModel(object):
         _B = B.todense() if issparse(B) else B
 
         return evidence(obs, _A, obs_cov, _B, pri_mu, pri_cov)
+
+    def postpred(self, data, obs_cov=1.0):
+
+        A, _ = self._build_sys_mat(data)
+        obs = data.eval(self.output_col).values
+
+        return postpred(obs, A, obs_cov, self.post_mu, self.post_icov)
