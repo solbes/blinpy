@@ -6,7 +6,7 @@ with open(os.path.join(os.path.dirname(__file__), "README.md")) as fh:
 
 setup(
     name='blinpy',
-    version='0.1.4.1',
+    version='0.1.5',
     packages=['blinpy'],
     url='https://github.com/solbes/blinpy',
     download_url = 'https://github.com/solbes/blinpy/archive/refs/tags/0.1.4.1.tar.gz',
