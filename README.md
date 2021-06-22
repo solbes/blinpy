@@ -102,6 +102,26 @@ print(lm.theta)
 {'bias': 4.603935457929664, 'th1': 0.34251082265349875}
 ```
 
+### Using the numpy engine directly
+
+For some more complex linear models, one might want to use the numpy linear fitting function directly. The function is found from `blinpy.utils.linfit`, an example of how to fit the above example is given below:
+
+```python
+import numpy as np
+from blinpy.utils import linfit
+
+x = np.array([0.0, 1.0, 1.0, 2.0, 1.8, 3.0, 4.0, 5.2, 6.5, 8.0, 10.0])
+y = np.array([5.0, 5.0, 5.1, 5.3, 5.5, 5.7, 6.0, 6.3, 6.7, 7.1, 7.5])
+
+X = np.concatenate((np.ones((11, 1)), x[:, np.newaxis]), axis=1)
+
+mu, icov, _ = linfit(y, X, pri_mu=[4.0, 0.35], pri_cov=[1.0, 0.001])
+print(mu)
+
+[4.54682564 0.3444257]
+```
+One can give the optional prior transformation matrix `B` as an input to the `linfit` function, by default `B` is identity.
+
 ### Smoothed interpolation 
 
 In many cases, one needs to approximate a function from noisy measurements. To get the smooth underlying trend behind the data, one often uses techniques like LOESS. An alternative way is to discretize the function onto a grid and treat the function values at the grid points as unknowns. In order to get smooth trends, one can add a prior (penalization term) that favors smoothness. In the helper function `smooth_interp1`, one can specify priors for the first and second order differences between the function values. The choice of using first or second order smoothness priors affects the extrapolation behavior of the function, as demonstrated below.
