@@ -165,3 +165,88 @@ plt.show()
 ```
 
 ![smooth_interp_demo](https://user-images.githubusercontent.com/6495497/111585506-175b4b00-87c8-11eb-9ea4-7e0d7664f05b.png)
+
+### Generalized Additive Models (GAM): line fit
+
+The `GamModel` class offers a more general interface to linear model fitting. With `GamModel` one can fit models that consist of components that represent `N` columns in the final system matrix. Priors can be given (optional) for each block. For instance, the line fitting example, where a prior is given for the slope, is solved with `GamModel` as follows:
+
+```python
+import numpy as np
+import pandas as pd
+from blinpy.models import GamModel
+
+data = pd.DataFrame(
+    {'x': np.array([0.0, 1.0, 1.0, 2.0, 1.8, 3.0, 4.0, 5.2, 6.5, 8.0, 10.0]),
+     'y': np.array([5.0, 5.0, 5.1, 5.3, 5.5, 5.7, 6.0, 6.3, 6.7, 7.1, 7.5])}
+)
+
+gam_specs = [
+    {
+        'fun': lambda df: df['x'].values[:, np.newaxis],
+        'name': 'slope',
+        'prior': {
+            'B': np.eye(1),
+            'mu': np.array([0.35]),
+            'cov': np.array([0.001])
+        }
+    },
+    {
+        'fun': lambda df: np.ones((len(df), 1)),
+        'name': 'bias'
+    }
+]
+
+model = GamModel('y', gam_specs).fit(data)
+model.theta
+
+{'slope': array([0.34251082]), 'bias': array([4.60393546])}
+```
+
+That is, one feeds in a list of dicts that specify the GAM components. Each dict must contain a function that returns the system matrix columns and a name for the model component. Optionally, one can specify a Gaussian prior for the components. The `GamModel` class then compiles and fits the linear-Gaussian system.
+
+### GAM: non-parametric regression
+
+Let us take a slightly more non-trivial example of a GAM, where we model an unknown function in a grid of selected input points. Points in between are linearly interpolated. Moreover, we impose a second order difference prior on the function values to enforce smoothness. The interpolation matrix and difference prior construction are done with utility functions provided in the package. The example code is given below:
+
+```python
+import numpy as np
+import pandas as pd
+import blinpy as bp
+import matplotlib.pyplot as plt
+
+xobs = -1.75 + 3.5*np.random.random(100)
+yobs = 3*xobs**4-6*xobs**2+2 + np.random.randn(len(xobs))
+data = pd.DataFrame({'x': xobs, 'y': yobs})
+
+xfit = np.linspace(-2,2,20)
+nfit = len(xfit)
+
+gam_spec = [
+    {
+        'fun': lambda df: bp.utils.interp_matrix(df['x'].values, xfit),
+        'name': 'smoothfun',
+        'prior': {
+            'B': bp.utils.diffmat(nfit, order=2),
+            'mu': np.zeros(nfit-2),
+            'cov': np.ones(nfit-2)
+        }
+    }
+]
+
+model = bp.models.GamModel('y', gam_spec).fit(data)
+print(model.theta)
+
+plt.figure(figsize=(6,4))
+plt.plot(xobs, yobs, 'k.')
+plt.plot(xfit, model.post_mu, 'r-')
+plt.grid(True)
+plt.show()
+
+{'smoothfun': array([16.83584518, 11.41451668,  5.99318818,  1.70894339, -0.57917346,
+       -1.10535146, -0.62246082,  0.95388427,  1.88575506,  2.07577794,
+        2.19637689,  1.61404071,  0.48381775, -0.22563978, -0.74711054,
+       -0.82681361,  0.84100582,  4.54902101,  8.76411573, 12.97921046])}
+```
+![gam_demo2](https://user-images.githubusercontent.com/6495497/122905179-a93f9a80-d359-11eb-9e75-9efa6e0b0bf6.png)
+
+GAM models give a nice way to blend parametric and nonparametric regression models together.
