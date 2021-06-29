@@ -575,6 +575,48 @@ def symmat(n, nsymm=None):
     return S
 
 
+def smooth_diff1(input_col, xfit, mu=0, std=1e9, diff_mu=0, diff_std=1,
+                 diff_order=2, sparse=True):
+    """
+    A helper function for generating GAM model spec dicts for simple 1d cases.
+    Parameters
+    ----------
+    input_col: str, name of input column in fit data, df.eval syntax works
+    xfit: np.array, input grid
+    mu: float, prior mean for the function values
+    std: float, prior std for the function values
+    diff_mu: float, prior mean for the diffs of the function values
+    diff_std: float, prior std for the diffs of the function values
+    diff_order: int, order of the difference prior applied
+    sparse: bool, use sparse diff and interpolation matrices?
+
+    Returns
+    -------
+    GAM specification dict
+    """
+
+    nfit = len(xfit)
+    D = diffmat(nfit, order=diff_order, sparse=sparse)
+    diff_mu = diff_mu*np.ones(nfit-diff_order)
+    diff_cov = diff_std**2*np.ones(nfit-diff_order)
+
+    fmu = mu*np.ones(nfit)
+    fcov = std**2*np.ones(nfit)
+
+    return {
+        'fun': lambda df: interp_matrix(
+            df.eval(input_col).values, xfit, sparse=sparse
+        ),
+        'name': 'f({0})'.format(input_col),
+        'prior': {
+            'B': np.vstack((D, np.eye(nfit))) if not sparse else
+                vstack((D, eye(nfit))),
+            'mu': np.concatenate((diff_mu, fmu)),
+            'cov': np.concatenate((diff_cov, fcov))
+        }
+    }
+
+
 def to_dict(model):
     """Serialize the model object into a JSON dict
 
