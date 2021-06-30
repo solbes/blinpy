@@ -291,4 +291,10 @@ class GamModel(object):
         A, _ = self._build_sys_mat(data)
         obs = data.eval(self.output_col).values
 
-        return postpred(obs, A, obs_cov, self.post_mu, self.post_icov)
+        # if sparse, transform to dense, since postpred calculation does
+        # not benefit from sparsity anyway
+        _A = A if not issparse(A) else A.todense()
+        _post_icov = self.post_icov if not issparse(self.post_icov) else \
+            self.post_icov.todense()
+
+        return postpred(obs, _A, obs_cov, self.post_mu, _post_icov)

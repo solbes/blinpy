@@ -576,7 +576,7 @@ def symmat(n, nsymm=None):
 
 
 def smooth_diff1(input_col, xfit, mu=0, std=1e9, diff_mu=0, diff_std=1,
-                 diff_order=2, sparse=True):
+                 diff_order=2, sparse=True, name=None):
     """
     A helper function for generating GAM model spec dicts for simple 1d cases.
     Parameters
@@ -589,6 +589,7 @@ def smooth_diff1(input_col, xfit, mu=0, std=1e9, diff_mu=0, diff_std=1,
     diff_std: float, prior std for the diffs of the function values
     diff_order: int, order of the difference prior applied
     sparse: bool, use sparse diff and interpolation matrices?
+    name: str, optional name for the function, by default f(input_col)
 
     Returns
     -------
@@ -607,7 +608,7 @@ def smooth_diff1(input_col, xfit, mu=0, std=1e9, diff_mu=0, diff_std=1,
         'fun': lambda df: interp_matrix(
             df.eval(input_col).values, xfit, sparse=sparse
         ),
-        'name': 'f({0})'.format(input_col),
+        'name': 'f({0})'.format(input_col) if name is None else name,
         'prior': {
             'B': np.vstack((D, np.eye(nfit))) if not sparse else
                 vstack((D, eye(nfit))),
