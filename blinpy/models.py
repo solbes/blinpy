@@ -57,6 +57,16 @@ class LinearModel(object):
 
         return pri_sys
 
+    def _build_system_matrix(self, data):
+
+        # add intercept if needed
+        _data = data.copy()
+        if self.bias:
+            _data['bias'] = 1.0
+
+        # construct system matrix
+        return np.stack([_data.eval(col).values for col in self.input_cols]).T
+
     def fit(self, data, obs_cov=1.0, pri_mu=None, pri_cov=1.0):
         """Feed data (observation data and possible prior specs) and fit the
         model.
@@ -78,14 +88,9 @@ class LinearModel(object):
         # TODO: check data validity
         assert isinstance(data, pd.DataFrame), "Data must be pd.DataFrame"
 
-        # add intercept if needed
-        _data = data.copy()
-        if self.bias:
-            _data['bias'] = 1.0
-
         # construct system matrix and obs vector
-        A = np.stack([_data.eval(col).values for col in self.input_cols]).T
-        obs = _data.eval(self.output_col).values
+        A = self._build_system_matrix(data)
+        obs = data.eval(self.output_col).values
 
         # fit the linear gaussian models
         self.post_mu, self.post_icov, _ = linfit(
@@ -111,13 +116,8 @@ class LinearModel(object):
 
         """
 
-        # add bias to data if needed
-        _data = data.copy()
-        if self.bias:
-            _data['bias'] = 1.0
-
         # build system matrix
-        A = np.stack([_data.eval(col).values for col in self.input_cols]).T
+        A = self._build_system_matrix(data)
 
         return A.dot(self.post_mu[:, np.newaxis])[:, 0]
 
@@ -131,14 +131,9 @@ class LinearModel(object):
         ny = len(data)
         boot_size = boot_size if boot_size is not None else ny
 
-        # add intercept if needed
-        _data = data.copy()
-        if self.bias:
-            _data['bias'] = 1.0
-
         # construct system matrix and obs vector
-        A = np.stack([_data.eval(col).values for col in self.input_cols]).T
-        obs = _data.eval(self.output_col).values
+        A = self._build_system_matrix(data)
+        obs = data.eval(self.output_col).values
 
         # fit in a loop
         samples = np.zeros((len(self.post_mu), nsamples)) * np.nan
