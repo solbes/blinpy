@@ -46,6 +46,7 @@ class LinearModel(object):
         self.post_icov = None
         self.boot_samples = None
         self.post_samples = None
+        self.obs_cov = None
 
         # TODO: check system validity
 
@@ -92,10 +93,25 @@ class LinearModel(object):
         A = self._build_system_matrix(data)
         obs = data.eval(self.output_col).values
 
+        # if MSE requested, fit a model with constant variance first
+        if obs_cov == 'mse':
+            post_mu, _, _ = linfit(
+                obs, A,
+                obs_cov=1.0,
+                pri_mu=pri_mu,
+                B=self._prior_sys,
+                pri_cov=pri_cov,
+            )
+            ypred = A.dot(post_mu[:, np.newaxis])[:, 0]
+            rss = np.sum((obs-ypred)**2)
+            self.obs_cov = rss/(len(obs)-len(post_mu))
+        else:
+            self.obs_cov = obs_cov
+
         # fit the linear gaussian models
         self.post_mu, self.post_icov, _ = linfit(
             obs, A,
-            obs_cov=obs_cov,
+            obs_cov=self.obs_cov,
             pri_mu=pri_mu,
             B=self._prior_sys,
             pri_cov=pri_cov
@@ -120,6 +136,37 @@ class LinearModel(object):
         A = self._build_system_matrix(data)
 
         return A.dot(self.post_mu[:, np.newaxis])[:, 0]
+
+    def predict_cov(self, data):
+        """Predictive covariance with a fitted linear model.
+
+        Parameters
+        ----------
+        data: input data as pd.DataFrame
+
+        Returns
+        -------
+        Posterior predictive covariance as numpy array
+        """
+
+        A = self._build_system_matrix(data)
+        return A.dot(np.linalg.solve(self.post_icov, A.T))
+
+    def predict_var(self, data):
+        """Predictive variance with a fitted linear model.
+
+        Parameters
+        ----------
+        data: input data as pd.DataFrame
+
+        Returns
+        -------
+        Posterior predictive variance as a numpy vector
+        """
+
+        A = self._build_system_matrix(data)
+        icov_At = np.linalg.solve(self.post_icov, A.T)
+        return np.sum(A*icov_At.T, axis=1)
 
     @property
     def theta(self):
