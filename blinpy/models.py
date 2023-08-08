@@ -208,7 +208,7 @@ class LinearModel(object):
     def sample(self, nsamples=500):
 
         samples = np.linalg.solve(
-            np.linalg.cholesky(self.post_icov),
+            np.linalg.cholesky(self.post_icov).T,
             np.random.standard_normal((len(self.post_mu), nsamples))
         )
 
