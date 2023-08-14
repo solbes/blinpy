@@ -1,12 +1,30 @@
 import logging
 import numpy as np
-import quadprog
 from scipy.sparse import coo_matrix, issparse, diags, eye, vstack, csr_matrix
 from scipy.sparse.linalg import spsolve
 import functools
 import jsonpickle
 import json
 
+
+def solve_qp_cvxpy(P, q, G, h, meq):
+    import cvxpy as cp
+    x = cp.Variable(len(q))
+    prob = cp.Problem(cp.Minimize((1 / 2) * cp.quad_form(x, P) - q.T @ x),
+                      [G.T[:meq] @ x == h[:meq],
+                       G.T[meq:] @ x >= h[meq:]])
+    prob.solve()
+    return x.value
+
+def solve_qp(P, q, G, h, meq=0, method='quadprog'):
+    if method == 'quadprog':
+        import quadprog
+        return quadprog.solve_qp(P, q, G, h, meq=meq)[0]
+    elif method == 'cvxpy':
+        return solve_qp_cvxpy(P, q, G, h, meq=meq)
+    else:
+        raise ValueError(f'Unknown method {method}')
+    
 
 # parameterized meta-decorator, idea from
 # https://stackoverflow.com/questions/5929107/decorators-with-parameters
@@ -229,7 +247,7 @@ def linfit(obs, A, obs_cov=np.array(1.0), B=None, pri_mu=None,
 
 @numpify()
 def linfit_con(obs, A, obs_cov=np.array(1.0), B=None, pri_mu=None,
-               pri_cov=np.array(1.0), C=None, b=None, neq=0):
+               pri_cov=np.array(1.0), C=None, b=None, neq=0, method='quadprog'):
     """
     Fit a constrained linear system of form
     obs = A*th + N(0, obs_cov)
@@ -277,9 +295,9 @@ def linfit_con(obs, A, obs_cov=np.array(1.0), B=None, pri_mu=None,
     G = X.T.dot(X)
     a = X.T.dot(y)
     Ct = C.T if C is not None else None
-    res = quadprog.solve_qp(G, a, C=Ct, b=b, meq=neq)
+    res = solve_qp(G, a, Ct, b, meq=neq, method=method)
 
-    return res[0]
+    return res
 
 
 @numpify(types=(list, float, int, np.matrix))
