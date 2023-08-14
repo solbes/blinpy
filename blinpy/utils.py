@@ -12,7 +12,7 @@ def solve_qp_cvxpy(P, q, G, h, meq):
     x = cp.Variable(len(q))
     prob = cp.Problem(cp.Minimize((1 / 2) * cp.quad_form(x, P) - q.T @ x),
                       [G.T[:meq] @ x == h[:meq],
-                       G.T[meq:] @ x >= h[meq:]])
+                       G.T[meq:] @ x >= h[meq:]] if G is not None else [])
     prob.solve()
     return x.value
 
