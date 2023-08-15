@@ -15,9 +15,11 @@ setup(
     author_email='antti.solonen@gmail.com',
     description='Bayesian Linear Models in Python',
     keywords=['bayes', 'linear', 'gam'],
-    install_requires=['numpy', 'pandas', 'jsonpickle', 'scipy', 'quadprog'],
+    install_requires=['numpy', 'pandas', 'jsonpickle', 'scipy'],
     extras_require={
-        'dev': ['pytest']
+        'dev': ['pytest'],
+        'quadprog': ['quadprog'],
+        'cvxpy': ['cvxpy']
     },
     classifiers=[
         'Development Status :: 3 - Alpha',

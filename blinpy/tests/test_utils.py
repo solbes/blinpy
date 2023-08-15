@@ -29,11 +29,19 @@ y = np.array([5.0, 5.0, 5.1, 5.3, 5.5, 5.7, 6.0, 6.3, 6.7, 7.1, 7.5])
 def test_linfit(obs, A, kwargs, expected_mu):
 
     mu, icov, _ = utils.linfit(obs, A, **kwargs)
-    mu2 = utils.linfit_con(obs, A, **kwargs)
     np.testing.assert_allclose(mu, expected_mu, rtol=1e-5)
-    np.testing.assert_allclose(mu2, expected_mu, rtol=1e-5)
+
+    # Constraint does not change the optimum
+    n = A.shape[1]
+    kwargs_con = dict(C=np.eye(n), b=np.zeros(n), **kwargs)
+    for method in ('quadprog', 'cvxpy'):
+        for kwargs_i in (kwargs, kwargs_con):
+            mu = utils.linfit_con(obs, A, **kwargs_i, method=method)
+            np.testing.assert_allclose(mu, expected_mu, rtol=1e-5)
+
 
     pass
+
 
 
 @pytest.mark.parametrize(
