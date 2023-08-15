@@ -9,11 +9,14 @@ import json
 
 def solve_qp_cvxpy(P, q, G, h, meq):
     import cvxpy as cp
-    x = cp.Variable(len(q))
-    prob = cp.Problem(cp.Minimize((1 / 2) * cp.quad_form(x, P) - q.T @ x),
-                      [G.T[:meq] @ x == h[:meq],
-                       G.T[meq:] @ x >= h[meq:]] if G is not None else [])
+    n = len(q)
+    x = cp.Variable(n)
+    eq_constraints = [G.T[:meq] @ x == h[:meq]] if meq > 0 and G is not None else []
+    neq_constraints = [G.T[meq:] @ x >= h[meq:]] if meq < n and G is not None else []
+    objective = cp.Minimize((1 / 2) * cp.quad_form(x, P) - q.T @ x)
+    prob = cp.Problem(objective, eq_constraints + neq_constraints)
     prob.solve()
+
     return x.value
 
 def solve_qp(P, q, G, h, meq=0, method='quadprog'):
