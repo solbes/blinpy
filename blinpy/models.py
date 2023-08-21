@@ -214,6 +214,26 @@ class LinearModel(object):
 
         self.post_samples = self.post_mu[:, np.newaxis] + samples
 
+    @property
+    def bootstrap_stats(self, percentiles=(2.5, 50.0, 97.5)):
+
+        assert self.boot_samples is not None, "Model not bootstrapped yet"
+
+        stats = pd.DataFrame(index=self.theta_names)
+
+        # mean, std and t-values (signa-to-noise ratios)
+        stats['map'] = self.post_mu
+        stats['mean'] = np.nanmean(self.boot_samples, axis=1)
+        stats['std'] = np.nanstd(self.boot_samples, axis=1)
+        stats['t-values'] = stats['mean'].abs() / stats['std']
+
+        # requested percentiles
+        perc = np.nanpercentile(self.boot_samples, percentiles, axis=1)
+        for i in range(len(percentiles)):
+            stats['q' + str(percentiles[i])] = perc[i, :]
+
+        return stats
+
 
 @numpify()
 def smooth_interp1(x, xp, yp, obs_cov=1, d1_var=np.array(1e9),
