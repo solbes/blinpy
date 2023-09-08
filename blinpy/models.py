@@ -94,7 +94,7 @@ class LinearModel(object):
         obs = data.eval(self.output_col).values
 
         # if MSE requested, fit a model with constant variance first
-        if obs_cov == 'mse':
+        if isinstance(obs_cov, str) and obs_cov == 'mse':
             post_mu, _, _ = linfit(
                 obs, A,
                 obs_cov=1.0,
