@@ -68,7 +68,7 @@ class LinearModel(object):
         # construct system matrix
         return np.stack([_data.eval(col).values for col in self.input_cols]).T
 
-    def fit(self, data, obs_cov=1.0, pri_mu=None, pri_cov=1.0):
+    def fit(self, data, obs_cov=1.0, pri_mu=None, pri_cov=1.0, weights=1.0):
         """Feed data (observation data and possible prior specs) and fit the
         model.
 
@@ -101,6 +101,7 @@ class LinearModel(object):
                 pri_mu=pri_mu,
                 B=self._prior_sys,
                 pri_cov=pri_cov,
+                weights=weights
             )
             ypred = A.dot(post_mu[:, np.newaxis])[:, 0]
             rss = np.sum((obs-ypred)**2)

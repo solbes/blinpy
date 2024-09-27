@@ -19,6 +19,7 @@ def solve_qp_cvxpy(P, q, G, h, meq):
 
     return x.value
 
+
 def solve_qp(P, q, G, h, meq=0, method='quadprog'):
     if method == 'quadprog':
         import quadprog
@@ -81,7 +82,7 @@ def to_cov(x, dim=None, sparse=False):
 
 
 @numpify()
-def scale_with_cov(x, cov):
+def scale_with_cov(x, cov, weights=np.array(1.0)):
     """Scale a vector or matrix with a covariance matrix, useful when whitening
     fitting problems.
 
@@ -90,6 +91,7 @@ def scale_with_cov(x, cov):
     x: vector or matrix as np.array or list
     cov: variance as scalar or vector, or covariance matrix as matrix,
     accepts np.arrays and lists
+    weights: optional fitting weights as np.array
 
     Returns
     -------
@@ -101,7 +103,7 @@ def scale_with_cov(x, cov):
 
     if x.ndim == 1:
         if cov.ndim < 2:
-            l_inv_x = x / np.sqrt(cov)
+            l_inv_x = x / np.sqrt(cov) * np.sqrt(weights)
         elif cov.ndim == 2:
             l_inv_x = np.linalg.solve(
                 np.linalg.cholesky(cov),
@@ -109,9 +111,16 @@ def scale_with_cov(x, cov):
             )[:, 0]
     elif x.ndim == 2:
         if cov.ndim == 0:
-            l_inv_x = x / np.sqrt(cov)
+            if weights.ndim == 1:
+                l_inv_x = x / np.sqrt(cov) * np.sqrt(weights[:, np.newaxis])
+            else:
+                l_inv_x = x / np.sqrt(cov)
         elif cov.ndim == 1:
-            l_inv_x = x / np.sqrt(cov[:, np.newaxis])
+            if weights.ndim == 1:
+                l_inv_x = (x / np.sqrt(cov[:, np.newaxis]) *
+                           np.sqrt(weights[:, np.newaxis]))
+            else:
+                l_inv_x = x / np.sqrt(cov[:, np.newaxis])
         elif cov.ndim == 2:
             l_inv_x = np.linalg.solve(np.linalg.cholesky(cov), x)
 
@@ -184,7 +193,7 @@ def logdet(cov):
 
 @numpify()
 def linfit(obs, A, obs_cov=np.array(1.0), B=None, pri_mu=None,
-           pri_cov=np.array(1.0), posterior=True):
+           pri_cov=np.array(1.0), posterior=True, weights=np.array(1.0)):
     """Fit a linear system of form
     obs = A*th + N(0, obs_cov)
     B*th ~ N(pri_mu, pri_cov)
@@ -201,6 +210,7 @@ def linfit(obs, A, obs_cov=np.array(1.0), B=None, pri_mu=None,
     pri_cov: np.array or list, prior (co)variance, scalar or N_pri vector or
     N_pri*N_pri matrix
     posterior: boolean to indicate whether or not to calculate the posterior
+    weights: optional np.array of len N_obs to give weights for the fit
 
     Returns
     -------
@@ -212,8 +222,8 @@ def linfit(obs, A, obs_cov=np.array(1.0), B=None, pri_mu=None,
     check_dimensions(obs, A, obs_cov, B, pri_mu, pri_cov)
 
     # whiten the system
-    y = scale_with_cov(obs, obs_cov)
-    X = scale_with_cov(A, obs_cov)
+    y = scale_with_cov(obs, obs_cov, weights)
+    X = scale_with_cov(A, obs_cov, weights)
 
     # include prior system if given
     logdet_pri = 0

@@ -26,6 +26,20 @@ def test_linear_model():
         rtol=1e-5
     )
 
+    # 1) linear model, weights
+    lm = models.LinearModel(
+        output_col='y',
+        input_cols=['x'],
+        bias=True,
+        theta_names=['th1'],
+    ).fit(data, weights=np.ones(len(data)))
+
+    np.testing.assert_allclose(
+        np.array([4.883977, 0.270029]),
+        lm.post_mu,
+        rtol=1e-5
+    )
+
     # 2) partial prior
     lm = models.LinearModel(
         output_col='y',
