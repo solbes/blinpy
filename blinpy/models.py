@@ -115,7 +115,8 @@ class LinearModel(object):
             obs_cov=self.obs_cov,
             pri_mu=pri_mu,
             B=self._prior_sys,
-            pri_cov=pri_cov
+            pri_cov=pri_cov,
+            weights=weights
         )
 
         return self
